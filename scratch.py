@@ -46,7 +46,7 @@ def make_batch_generator(text, batch_size=50, seq_length=50, active_range=(0, 1)
             batch = shuffled_batches[batch_number*batch_size:(batch_number+1)*batch_size]
             one_hot_batch = encode_one_hot(batch, len(alphabet))
             X_batch = one_hot_batch[:, :-1]
-            Y_batch = one_hot_batch[:, [-1]]
+            Y_batch = one_hot_batch[:, -1]
             yield epoch_number, batch_number, X_batch, Y_batch
 
             if batch_number > len(shuffled_batches)/batch_size - 2:           
@@ -60,7 +60,7 @@ def make_batch_generator(text, batch_size=50, seq_length=50, active_range=(0, 1)
 
 def make_model(alphabet_size=34, seq_length=50, layer_size=128):
     model = Sequential()
-    model.add(GRU(layer_size, layer_size, truncate_gradient=seq_length))
+    model.add(GRU(alphabet_size, layer_size, truncate_gradient=seq_length))
     model.add(Dense(layer_size, alphabet_size, activation='sigmoid'))
     
     model.compile(loss='categorical_crossentropy', optimizer='adam')
