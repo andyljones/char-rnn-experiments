@@ -11,7 +11,7 @@ import logging
 from keras.models import Sequential
 from keras.layers.core import Dense, RepeatVector
 from keras.layers.recurrent import GRU
-from keras.optimizers import RMSprop
+from keras.optimizers import RMSprop, adam
 
 def encode_one_hot(batch, alphabet_size):
     batch_is, batch_js = sp.indices((batch.shape[0], batch.shape[1]))  
@@ -39,52 +39,87 @@ def make_batch_generator(text, batch_size=50, seq_length=50, active_range=(0, 1)
     encoded_text = sp.array([encoder[c] for c in text_to_use], dtype=sp.uint8)
     all_batches = sp.array([encoded_text[i:seq_length+1+i] for i in range(len(encoded_text) - seq_length - 1)])
 
-    def make_internal_generator():
+    def make_generator():
         shuffled_batches = sp.random.permutation(all_batches)    
         
-        epoch_number = 0
-        batch_number = 0
+        epoch_count = 0
+        batch_count = 0
         while True:
-            batch = shuffled_batches[batch_number*batch_size:(batch_number+1)*batch_size]
+            batch = shuffled_batches[batch_count*batch_size:(batch_count+1)*batch_size]
             one_hot_batch = encode_one_hot(batch, len(alphabet))
             X_batch = one_hot_batch[:, :-1]
             Y_batch = one_hot_batch[:, -1]
-            yield epoch_number, batch_number, X_batch, Y_batch
+            yield epoch_count, batch_count, X_batch, Y_batch
 
-            if batch_number > len(shuffled_batches)/batch_size - 2:           
+            if batch_count > len(shuffled_batches)/batch_size - 2:           
                 shuffled_batches = sp.random.permutation(shuffled_batches)
-                epoch_number += 1
-                batch_number = 0
+                epoch_count += 1
+                batch_count = 0
             else:
-                batch_number += 1
+                batch_count += 1
                 
-    return make_internal_generator(), encoder
+    generator = make_generator()                
+           
+    return generator, encoder
 
-def make_model(alphabet_size=67, seq_length=50, layer_size=128):
+def make_model(alphabet_size=65, seq_length=50, layer_size=128):
     model = Sequential()
-    model.add(GRU(alphabet_size, layer_size, truncate_gradient=seq_length))
+    model.add(GRU(alphabet_size, layer_size, truncate_gradient=seq_length, return_sequences=True))    
+    model.add(GRU(layer_size, layer_size, truncate_gradient=seq_length))
     model.add(Dense(layer_size, alphabet_size, activation='sigmoid'))
     
-    optimizer = RMSprop(lr=2e-3)
+    optimizer = adam(lr=2e-3)
     optimizer.clipnorm = 5
     model.compile(loss='categorical_crossentropy', optimizer=optimizer)
     
     return model
     
-def train_model(model, train_batch_gen):
-    last_epoch_num = 0
+def make_test_model_gen(model, batch_gen):
+    total_loss = 0.
+    total_seen = 0
+    last_epoch = 0
     while True:
-        epoch_num, batch_num, X_batch, Y_batch = next(train_batch_gen)
+        epoch, batch, X_batch, Y_batch = next(batch_gen)
         
-        if epoch_num != last_epoch_num and last_epoch_num != 0:
-            yield
+        if epoch != last_epoch:
+            print('Epoch {}, testing loss {:4f}'.format(epoch, loss))   
+            yield epoch
             
-        last_epoch_num = epoch_num
+            total_loss = 0.
+            total_seen = 0
         
-        loss = model.train_on_batch(X_batch, Y_batch)
-        print('Training on epoch {}, batch {}. Loss: {}'.format(epoch_num, batch_num, loss))
+        loss = model.test_on_batch(X_batch, Y_batch)[()]
+        total_loss += loss
+        total_seen += len(X_batch)
         
-def test_model(model, test_batch_gen):
-    pass
+def make_train_model_gen(model, batch_gen, test_interval):
+    batches_seen = 0
+    last_epoch = 0
+    while True:
+        epoch, batch, X_batch, Y_batch = next(batch_gen)
+        
+        if epoch != last_epoch:
+            last_epoch = epoch
+            batches_seen = 0
+        if batches_seen % test_interval == 0:
+            yield epoch
+            
+        loss = model.train_on_batch(X_batch, Y_batch)[()]
+        print('Epoch {}, batch {}, training loss {:4f}'.format(epoch, batch, loss))        
+        batches_seen += 1        
+        
+def train_and_test_model(model, text, total_epochs=100, test_interval=1000):
+    train_batch_gen, _ = make_batch_generator(text, active_range=(0., 0.95))  
+    train_model_gen = make_train_model_gen(model, train_batch_gen, test_interval=test_interval)
+
+    test_batch_gen, _ = make_batch_generator(text, active_range=(0.95, 1.))
+    test_model_gen = make_test_model_gen(model, test_batch_gen)
+    
+    epoch = 0
+    while epoch < total_epochs:
+        epoch = next(train_model_gen)
+        next(test_model_gen)
+        
+    
         
         
