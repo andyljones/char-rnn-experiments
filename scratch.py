@@ -6,10 +6,12 @@ Created on Wed Jul  8 09:09:53 2015
 """
 
 import scipy as sp
+import logging
 
 from keras.models import Sequential
 from keras.layers.core import Dense, RepeatVector
 from keras.layers.recurrent import GRU
+from keras.optimizers import RMSprop
 
 def encode_one_hot(batch, alphabet_size):
     batch_is, batch_js = sp.indices((batch.shape[0], batch.shape[1]))  
@@ -58,11 +60,31 @@ def make_batch_generator(text, batch_size=50, seq_length=50, active_range=(0, 1)
                 
     return make_internal_generator(), encoder
 
-def make_model(alphabet_size=34, seq_length=50, layer_size=128):
+def make_model(alphabet_size=67, seq_length=50, layer_size=128):
     model = Sequential()
     model.add(GRU(alphabet_size, layer_size, truncate_gradient=seq_length))
     model.add(Dense(layer_size, alphabet_size, activation='sigmoid'))
     
-    model.compile(loss='categorical_crossentropy', optimizer='adam')
+    optimizer = RMSprop(lr=2e-3)
+    optimizer.clipnorm = 5
+    model.compile(loss='categorical_crossentropy', optimizer=optimizer)
     
     return model
+    
+def train_model(model, train_batch_gen):
+    last_epoch_num = 0
+    while True:
+        epoch_num, batch_num, X_batch, Y_batch = next(train_batch_gen)
+        
+        if epoch_num != last_epoch_num and last_epoch_num != 0:
+            yield
+            
+        last_epoch_num = epoch_num
+        
+        loss = model.train_on_batch(X_batch, Y_batch)
+        print('Training on epoch {}, batch {}. Loss: {}'.format(epoch_num, batch_num, loss))
+        
+def test_model(model, test_batch_gen):
+    pass
+        
+        
