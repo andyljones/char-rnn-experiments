@@ -10,8 +10,9 @@ import logging
 
 from keras.models import Sequential
 from keras.layers.core import Dense, RepeatVector
-from keras.layers.recurrent import GRU
+from keras.layers.recurrent import GRU, LSTM
 from keras.optimizers import RMSprop, adam
+from keras.initializations import uniform
 
 def encode_one_hot(batch, alphabet_size):
     batch_is, batch_js = sp.indices((batch.shape[0], batch.shape[1]))  
@@ -63,14 +64,36 @@ def make_batch_generator(text, batch_size=50, seq_length=50, active_range=(0, 1)
     return generator, encoder
 
 def make_model(alphabet_size=65, seq_length=50, layer_size=128):
+    initializer = lambda s: uniform(s, 0.08)
+
     model = Sequential()
-    model.add(GRU(alphabet_size, layer_size, truncate_gradient=seq_length, return_sequences=True))    
-    model.add(GRU(layer_size, layer_size, truncate_gradient=seq_length))
-    model.add(Dense(layer_size, alphabet_size, activation='sigmoid'))
+    model.add(LSTM(alphabet_size, 
+                   layer_size, 
+                   truncate_gradient=seq_length,
+                   init=initializer, 
+                   inner_init=initializer,
+                   inner_activation='sigmoid',
+                   activation='tanh',
+                   forget_bias_init=initializer,
+                   return_sequences=True))
+    model.add(LSTM(layer_size, 
+                   layer_size, 
+                   truncate_gradient=seq_length,
+                   init=initializer, 
+                   inner_init=initializer,
+                   inner_activation='sigmoid',
+                   activation='tanh',
+                   forget_bias_init=initializer,
+                   return_sequences=False))  
+    model.add(Dense(layer_size, 
+                    alphabet_size,
+                    init=initializer,
+                    activation='softmax'))
     
-    optimizer = adam(lr=2e-3)
+    optimizer = RMSprop(lr=2e-3, rho=0.95)
     optimizer.clipnorm = 5
-    model.compile(loss='categorical_crossentropy', optimizer=optimizer)
+    model.compile(loss='categorical_crossentropy', 
+                  optimizer=optimizer)
     
     return model
     
