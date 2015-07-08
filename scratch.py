@@ -9,10 +9,11 @@ import scipy as sp
 import logging
 
 from keras.models import Sequential
-from keras.layers.core import Dense, RepeatVector
+from keras.layers.core import Dense, TimeDistributedDense
 from keras.layers.recurrent import GRU, LSTM
 from keras.optimizers import RMSprop, adam
 from keras.initializations import uniform
+from keras.layers.convolutional import Convolution1D
 
 def encode_one_hot(batch, alphabet_size):
     batch_is, batch_js = sp.indices((batch.shape[0], batch.shape[1]))  
@@ -49,7 +50,7 @@ def make_batch_generator(text, batch_size=50, seq_length=50, active_range=(0, 1)
             batch = shuffled_batches[batch_count*batch_size:(batch_count+1)*batch_size]
             one_hot_batch = encode_one_hot(batch, len(alphabet))
             X_batch = one_hot_batch[:, :-1]
-            Y_batch = one_hot_batch[:, -1]
+            Y_batch = one_hot_batch[:, 1:]
             yield epoch_count, batch_count, X_batch, Y_batch
 
             if batch_count > len(shuffled_batches)/batch_size - 2:           
@@ -84,8 +85,8 @@ def make_model(alphabet_size=65, seq_length=50, layer_size=128):
                    inner_activation='sigmoid',
                    activation='tanh',
                    forget_bias_init=initializer,
-                   return_sequences=False))  
-    model.add(Dense(layer_size, 
+                   return_sequences=True))  
+    model.add(TimeDistributedDense(layer_size, 
                     alphabet_size,
                     init=initializer,
                     activation='softmax'))
