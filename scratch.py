@@ -85,6 +85,7 @@ def make_test_model_gen(model, batch_gen):
             print('Epoch {}, testing loss {:4f}'.format(epoch, loss))   
             yield epoch
             
+            last_epoch = epoch
             total_loss = 0.
             total_seen = 0
         
