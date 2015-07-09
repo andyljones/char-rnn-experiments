@@ -18,16 +18,21 @@ def decode_to_string(batch, encoder):
     strings = [''.join(row) for row in chars]
     
     return strings
-    
-def mle_sample(model, encoder, sample_length=100, seq_length=50):
+
+def weighted_choice(weights):
+    weights = weights/weights.sum()
+    return sp.random.choice(range(len(weights)), p=weights)
+
+def sample(model, encoder, sample_length=100, seq_length=50):
     most_recent_text = ' '*seq_length
     generated_text = ''
+    
+    decoder = {sp.argmax(one_hot): c for c, one_hot in encoder.items()}   
     
     for _ in range(sample_length):
         X = encode_string(most_recent_text, encoder)
         Y = model.predict(X[None, :, :])
-        S = decode_to_string(Y, encoder)[0]
-        s = S[-1]
+        s = decoder[weighted_choice(Y[0, -1])]
         
         most_recent_text = most_recent_text[1:] + s
         generated_text = generated_text + s        
