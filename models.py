@@ -81,7 +81,7 @@ def make_rnn(alphabet_size=65, seq_length=50, layer_size=256):
                                    init=init,
                                    activation='softmax'))
                                    
-    optimizer = adam()
+    optimizer = adam(lr=0.01)
     optimizer.clipnorm = 5
     model.compile(loss='categorical_crossentropy', 
                   optimizer=optimizer)

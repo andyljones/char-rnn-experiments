@@ -33,7 +33,8 @@ def _make_random_seqs(encoded_text, seq_length):
     return sp.random.permutation(all_seqs)
 
 def _make_batch_generator(encoded_text, batch_size, seq_length, alphabet_size):
-    shuffled_seqs = _make_random_seqs(encoded_text, seq_length)    
+    shuffled_seqs = _make_random_seqs(encoded_text, seq_length)        
+    final_batch_number = len(shuffled_seqs)/batch_size - 2
     
     epoch_count = 0
     batch_count = 0
@@ -43,7 +44,7 @@ def _make_batch_generator(encoded_text, batch_size, seq_length, alphabet_size):
         Y_batch = batch[:, 1:]
         yield epoch_count, batch_count, X_batch, Y_batch
 
-        if batch_count > len(shuffled_seqs)/batch_size - 2:           
+        if batch_count > final_batch_number:           
             shuffled_seqs = _make_random_seqs(encoded_text, seq_length)
             epoch_count += 1
             batch_count = 0

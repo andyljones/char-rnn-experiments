@@ -11,40 +11,31 @@ from models import *
 from batch_generation import make_batch_generator
         
 def _make_train_model_coroutine(model, batch_gen):
-    batches_seen = 0
-    last_epoch = 0
     while True:
         epoch, batch, X_batch, Y_batch = next(batch_gen)
         
-        epoch_has_changed = (epoch != last_epoch)
-        if epoch_has_changed:
-            last_epoch = epoch
-            batches_seen = 0
+        if batch == 0:
             yield
             
         loss = model.train_on_batch(X_batch, Y_batch)[()]
         
-        if batches_seen % 10 == 0: 
-            logging.info('Epoch {}, batch {}, training loss {:4f}'.format(epoch, batch, loss))        
-        
-        batches_seen += 1        
+        if batch % 10 == 0: 
+            logging.info('Epoch {}, batch {}, training loss {:4f}'.format(epoch, batch, loss))          
 
 def _make_test_model_coroutine(model, batch_gen):
     total_loss = 0.
     total_seen = 0
-    last_epoch = 0
     while True:
-        epoch, batch, X_batch, Y_batch = next(batch_gen)
+        _, _, X_batch, Y_batch = next(batch_gen)
         
-        epoch_has_changed = (epoch != last_epoch)
-        if epoch_has_changed:
+        if batch == 0:
             logging.info('Testing loss {:4f}'.format(total_loss/total_seen))   
-            yield
-            
-            last_epoch = epoch
+
             total_loss = 0.
-            total_seen = 0        
-        
+            total_seen = 0                 
+            
+            yield
+               
         loss = model.test_on_batch(X_batch, Y_batch)[()]
         total_loss += loss
         total_seen += 1          
