@@ -6,14 +6,18 @@ Created on Thu Jul  9 08:50:40 2015
 """
 from keras.models import Sequential
 from keras.layers.core import TimeDistributedDense
-from keras.layers.recurrent import LSTM
-from keras.optimizers import RMSprop
+from keras.layers.recurrent import LSTM, SimpleRNN
+from keras.optimizers import RMSprop, adam
 from keras.initializations import uniform
 
+import logging
+import scipy as sp
+
+def get_number_of_params(model):
+    return sum([sp.prod(p.shape.eval()) for p in model.params])
+
 def make_karpathy_lstm(alphabet_size=65, seq_length=50, layer_size=128):
-    """This is a work-alike for the default LSTM used in Karpathy's char-rnn work. 
-    
-    On the tiny_shakespere dataset, it has 240k parameters."""
+    """This is a work-alike for the default LSTM used in Karpathy's char-rnn work."""
     
     initializer = lambda s: uniform(s, 0.08)
 
@@ -37,16 +41,41 @@ def make_karpathy_lstm(alphabet_size=65, seq_length=50, layer_size=128):
                    forget_bias_init=initializer,
                    return_sequences=True))  
     model.add(TimeDistributedDense(layer_size, 
-                    alphabet_size,
-                    init=initializer,
-                    activation='softmax'))
+                                   alphabet_size,
+                                   init=initializer,
+                                   activation='softmax'))
     
     optimizer = RMSprop(lr=2e-3, rho=0.95)
     optimizer.clipnorm = 5
     model.compile(loss='categorical_crossentropy', 
                   optimizer=optimizer)
     
+    logging.info('Number of parameters: {}'.format(get_number_of_params(model)))    
+        
     return model
 
 def make_rnn(alphabet_size=65, seq_length=50, layer_size=256):
-    pass
+    
+    model = Sequential()
+    model.add(SimpleRNN(alphabet_size,
+                        layer_size,
+                        truncate_gradient=seq_length,
+                        return_sequences=True))
+    model.add(SimpleRNN(layer_size,
+                        layer_size,
+                        truncate_gradient=seq_length,
+                        return_sequences=True))
+    model.add(TimeDistributedDense(layer_size,
+                                   alphabet_size,
+                                   init='orthogonal',
+                                   activation='softmax'))
+                                   
+    optimizer = adam()
+    optimizer.clipnorm = 5
+    model.compile(loss='categorical_crossentropy', 
+                  optimizer=optimizer)
+                      
+    logging.info('Number of parameters: {}'.format(get_number_of_params(model)))   
+    
+    return model
+                
