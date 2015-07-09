@@ -52,7 +52,7 @@ def _make_test_model_coroutine(model, batch_gen):
         total_loss += loss
         total_seen += 1          
         
-def train_and_test_model(model, text, total_epochs=100, test_interval=1000):
+def train_and_test_model(model, text, total_epochs=20, test_interval=1000):
     train_batch_gen, _ = make_batch_generator(text, active_range=(0., 0.95))  
     train_model_gen = _make_train_model_coroutine(model, train_batch_gen, test_interval=test_interval)
 

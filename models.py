@@ -10,6 +10,8 @@ from keras.layers.recurrent import LSTM, SimpleRNN
 from keras.optimizers import RMSprop, adam
 from keras.initializations import uniform
 
+from initializations import random_restricted_orthogonal_matrix
+
 import logging
 import scipy as sp
 
@@ -56,18 +58,25 @@ def make_karpathy_lstm(alphabet_size=65, seq_length=50, layer_size=128):
 
 def make_rnn(alphabet_size=65, seq_length=50, layer_size=256):
     
+    init = lambda s: random_restricted_orthogonal_matrix(s, 0)
+    inner_init = lambda s: random_restricted_orthogonal_matrix(s, 64)
+    
     model = Sequential()
     model.add(SimpleRNN(alphabet_size,
                         layer_size,
                         truncate_gradient=seq_length,
+                        init=init,
+                        inner_init=inner_init,
                         return_sequences=True))
     model.add(SimpleRNN(layer_size,
                         layer_size,
                         truncate_gradient=seq_length,
+                        init=init,
+                        inner_init=inner_init,
                         return_sequences=True))
     model.add(TimeDistributedDense(layer_size,
                                    alphabet_size,
-                                   init='orthogonal',
+                                   init=init,
                                    activation='softmax'))
                                    
     optimizer = adam()
