@@ -51,12 +51,12 @@ def _make_test_model_coroutine(model, batch_gen):
         
 def train_and_test_model(model, text, total_epochs=20):
     train_batch_gen, _ = make_batch_generator(text, active_range=(0., 0.95))  
-    train_model_gen = _make_train_model_coroutine(model, train_batch_gen)
+    train_model_coroutine = _make_train_model_coroutine(model, train_batch_gen)
 
     test_batch_gen, _ = make_batch_generator(text, active_range=(0.95, 1.))
-    test_model_gen = _make_test_model_coroutine(model, test_batch_gen)
+    test_model_coroutine = _make_test_model_coroutine(model, test_batch_gen)
     
     for _ in range(total_epochs):
-        next(train_model_gen)
-        next(test_model_gen)
+        next(train_model_coroutine)
+        next(test_model_coroutine)
         
