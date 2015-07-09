@@ -10,7 +10,7 @@ import interactive_console_options
 from models import *
 from batch_generation import make_batch_generator
         
-def _make_train_model_coroutine(model, batch_gen, test_interval):
+def _make_train_model_coroutine(model, batch_gen):
     batches_seen = 0
     last_epoch = 0
     while True:
@@ -20,10 +20,6 @@ def _make_train_model_coroutine(model, batch_gen, test_interval):
         if epoch_has_changed:
             last_epoch = epoch
             batches_seen = 0
-        
-        yield_for_testing = (batches_seen % test_interval == 0)
-        if yield_for_testing:
-            yield epoch
             
         loss = model.train_on_batch(X_batch, Y_batch)[()]
         
@@ -52,9 +48,9 @@ def _make_test_model_coroutine(model, batch_gen):
         total_loss += loss
         total_seen += 1          
         
-def train_and_test_model(model, text, total_epochs=20, test_interval=1000):
+def train_and_test_model(model, text, total_epochs=20):
     train_batch_gen, _ = make_batch_generator(text, active_range=(0., 0.95))  
-    train_model_gen = _make_train_model_coroutine(model, train_batch_gen, test_interval=test_interval)
+    train_model_gen = _make_train_model_coroutine(model, train_batch_gen)
 
     test_batch_gen, _ = make_batch_generator(text, active_range=(0.95, 1.))
     test_model_gen = _make_test_model_coroutine(model, test_batch_gen)

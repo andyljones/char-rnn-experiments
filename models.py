@@ -59,7 +59,7 @@ def make_karpathy_lstm(alphabet_size=65, seq_length=50, layer_size=128):
 def make_rnn(alphabet_size=65, seq_length=50, layer_size=256):
     
     init = lambda s: random_restricted_orthogonal_matrix(s, 0)
-    inner_init = lambda s: random_restricted_orthogonal_matrix(s, 32)
+    inner_init = lambda s: random_restricted_orthogonal_matrix(s, 128)
     
     model = Sequential()
     model.add(SimpleRNN(alphabet_size,
