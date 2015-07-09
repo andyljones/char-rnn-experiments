@@ -67,12 +67,14 @@ def make_rnn(alphabet_size=65, seq_length=50, layer_size=256):
                         truncate_gradient=seq_length,
                         init=init,
                         inner_init=inner_init,
+                        activation='relu',
                         return_sequences=True))
     model.add(SimpleRNN(layer_size,
                         layer_size,
                         truncate_gradient=seq_length,
                         init=init,
                         inner_init=inner_init,
+                        activation='relu',
                         return_sequences=True))
     model.add(TimeDistributedDense(layer_size,
                                    alphabet_size,
