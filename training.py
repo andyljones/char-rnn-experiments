@@ -14,11 +14,6 @@ def _make_train_model_coroutine(model, batch_gen):
     while True:
         epoch, batch, X_batch, Y_batch = next(batch_gen)
         
-        if batch == 0:
-            if epoch >= 10:
-                model.optimizer.lr = model.optimizer.lr * 0.97
-            yield
-            
         loss = model.train_on_batch(X_batch, Y_batch)[()]
         
         if batch % 10 == 0: 
