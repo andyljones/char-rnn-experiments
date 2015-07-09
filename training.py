@@ -20,6 +20,7 @@ def _make_train_model_coroutine(model, batch_gen):
         if epoch_has_changed:
             last_epoch = epoch
             batches_seen = 0
+            yield
             
         loss = model.train_on_batch(X_batch, Y_batch)[()]
         
@@ -38,7 +39,7 @@ def _make_test_model_coroutine(model, batch_gen):
         epoch_has_changed = (epoch != last_epoch)
         if epoch_has_changed:
             logging.info('Testing loss {:4f}'.format(total_loss/total_seen))   
-            yield epoch
+            yield
             
             last_epoch = epoch
             total_loss = 0.
@@ -55,8 +56,7 @@ def train_and_test_model(model, text, total_epochs=20):
     test_batch_gen, _ = make_batch_generator(text, active_range=(0.95, 1.))
     test_model_gen = _make_test_model_coroutine(model, test_batch_gen)
     
-    epoch = 0
-    while epoch < total_epochs:
-        epoch = next(train_model_gen)
+    for _ in range(total_epochs):
+        next(train_model_gen)
         next(test_model_gen)
         
