@@ -11,6 +11,10 @@ from keras.optimizers import RMSprop
 from keras.initializations import uniform
 
 def make_karpathy_lstm(alphabet_size=65, seq_length=50, layer_size=128):
+    """This is a work-alike for the default LSTM used in Karpathy's char-rnn work. 
+    
+    On the tiny_shakespere dataset, it has 240k parameters."""
+    
     initializer = lambda s: uniform(s, 0.08)
 
     model = Sequential()
@@ -43,4 +47,6 @@ def make_karpathy_lstm(alphabet_size=65, seq_length=50, layer_size=128):
                   optimizer=optimizer)
     
     return model
+
+def make_rnn(alphabet_size=65, seq_length=50, layer_size=256):
     
