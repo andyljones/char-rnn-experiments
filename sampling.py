@@ -24,6 +24,7 @@ def weighted_choice(weights):
     return sp.random.choice(range(len(weights)), p=weights)
 
 def sample(model, encoder, sample_length=100, seq_length=50):
+    """This is spectacularly inefficient, but Theano doesn't play nice with variable-length sequences."""
     most_recent_text = ' '*seq_length
     generated_text = ''
     
