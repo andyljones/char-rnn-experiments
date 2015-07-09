@@ -50,7 +50,7 @@ def _make_test_model_coroutine(model, batch_gen):
         
         loss = model.test_on_batch(X_batch, Y_batch)[()]
         total_loss += loss
-        total_seen += len(X_batch)           
+        total_seen += 1          
         
 def train_and_test_model(model, text, total_epochs=100, test_interval=1000):
     train_batch_gen, _ = make_batch_generator(text, active_range=(0., 0.95))  

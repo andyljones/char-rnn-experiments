@@ -49,4 +49,4 @@ def make_karpathy_lstm(alphabet_size=65, seq_length=50, layer_size=128):
     return model
 
 def make_rnn(alphabet_size=65, seq_length=50, layer_size=256):
-    
+    pass
