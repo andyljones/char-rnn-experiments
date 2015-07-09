@@ -7,14 +7,6 @@ Created on Thu Jul  9 08:49:07 2015
 
 import scipy as sp
 
-def calculate_mean_std(encoded_text):
-    frequencies = sp.bincount(encoded_text).astype(float)/len(encoded_text)
-    
-    mean = frequencies
-    std = sp.sqrt(mean*(1-mean))
-    
-    return mean, std
-
 def encode_text(text):
     alphabet = set(list(text))
     char_to_int = {c: i for i, c in enumerate(alphabet)}
