@@ -7,9 +7,11 @@ Created on Thu Jul  9 08:49:43 2015
 
 import scipy as sp
 
-def decode_one_hot(one_hot):
-    return sp.argmax(one_hot, 2)
-
-def decode_to_string(batch, encoding):
-    decoder = {i: c for c, i in encoding.iteritems()}
-    return [''.join(row) for row in sp.vectorize(decoder.__getitem__)(batch)]
+def decode_to_string(batch, encoder):
+    decoder = {sp.argmax(one_hot): c for c, one_hot in encoder.items()}    
+    ints = sp.argmax(batch, 2)
+    
+    chars = sp.vectorize(decoder.__getitem__)(ints)
+    strings = [''.join(row) for row in chars]
+    
+    return strings

@@ -15,6 +15,8 @@ def _make_train_model_coroutine(model, batch_gen):
         epoch, batch, X_batch, Y_batch = next(batch_gen)
         
         if batch == 0:
+            if epoch >= 10:
+                model.optimizer.lr = model.optimizer.lr * 0.97
             yield
             
         loss = model.train_on_batch(X_batch, Y_batch)[()]
@@ -26,10 +28,10 @@ def _make_test_model_coroutine(model, batch_gen):
     total_loss = 0.
     total_seen = 0
     while True:
-        _, _, X_batch, Y_batch = next(batch_gen)
+        _, batch, X_batch, Y_batch = next(batch_gen)
         
         if batch == 0:
-            logging.info('Testing loss {:4f}'.format(total_loss/total_seen))   
+            logging.info('Testing loss {:4f}'.format(total_loss/max(total_seen, 1)))   
 
             total_loss = 0.
             total_seen = 0                 
@@ -40,7 +42,7 @@ def _make_test_model_coroutine(model, batch_gen):
         total_loss += loss
         total_seen += 1          
         
-def train_and_test_model(model, text, total_epochs=20):
+def train_and_test_model(model, text, total_epochs=100):
     train_batch_gen, _ = make_batch_generator(text, active_range=(0., 0.95))  
     train_model_coroutine = _make_train_model_coroutine(model, train_batch_gen)
 
