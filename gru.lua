@@ -40,10 +40,9 @@ function share_matched_names(module)
   end
 end
 
-
 function build(n_timesteps, n_symbols, n_neurons)
   local input = nn.Identity()()
-  local inputs = {input:split(n_timesteps)}
+  local inputs = {nn.SplitTable(1, 2)(input):split(n_timesteps)}
 
   local outputs = {}
 
