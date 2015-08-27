@@ -37,8 +37,4 @@ function build(n_symbols, n_neurons)
   return gmod
 end
 
-gmod = build(10, 20)
-print(gmod)
-graph.dot(gmod.fg, 'tmp', 'tmp')
-
--- return {build=build}
+return {build=build}
