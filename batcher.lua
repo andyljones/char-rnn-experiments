@@ -98,6 +98,7 @@ end
 
 
 return {
+  load_text=load_text,
   make_batch_iterators=make_batch_iterators,
   testing = {
     make_chunk_iterators=make_chunk_iterators,

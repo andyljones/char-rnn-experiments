@@ -27,7 +27,7 @@ function build_layer(input, input_size, n_neurons)
   return prev_hidden, next_hidden
 end
 
-function build(n_symbols, n_neurons)
+function build_timestep(n_symbols, n_neurons)
   local input = nn.Identity()()
   local prev_hidden, next_hidden = build_layer(input, n_symbols, n_neurons)
 
@@ -35,6 +35,17 @@ function build(n_symbols, n_neurons)
 
   local gmod = nn.gModule({input, prev_hidden}, {output, next_hidden})
   return gmod
+end
+
+function build(n_timesteps, n_symbols, n_neurons)
+  local original = build_timestep(n_symbols, n_neurons)
+  local modules = {}
+  for i = 1, n_timesteps do
+    modules[i] = original:clone()
+    modules[i].criterion = nn.ClassNLLCriterion()
+  end
+
+  return modules
 end
 
 return {build=build}

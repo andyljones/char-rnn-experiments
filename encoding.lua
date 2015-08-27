@@ -23,7 +23,7 @@ function ints_to_one_hot(ints, width)
 end
 
 function one_hot_to_ints(one_hot)
-  local _, ints = torch.max(one_hot, 1)
+  local _, ints = torch.max(one_hot, 2)
   return ints:view(-1)
 end
 
@@ -52,5 +52,6 @@ end
 return {
   chars_to_ints=chars_to_ints,
   ints_to_one_hot=ints_to_one_hot,
+  one_hot_to_ints=one_hot_to_ints,
   one_hot_to_chars=one_hot_to_chars
 }
