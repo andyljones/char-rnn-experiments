@@ -9,8 +9,8 @@ function test_chars_to_ints()
   local expected_alphabet = {a=1, b=2}
   local expected_encoded = torch.Tensor{1, 2, 1}
 
-  luaunit.assertTrue(torch.eq(expected_encoded, actual_encoded))
-  luaunit.assertEquals(expected_alphabet, actual_alphabet)
+  luaunit.assertTrue(torch.eq(actual_encoded, expected_encoded))
+  luaunit.assertEquals(actual_alphabet, expected_alphabet)
 end
 
 function test_ints_to_one_hot()
@@ -21,26 +21,17 @@ function test_ints_to_one_hot()
 
   local expected = torch.Tensor{{1, 0}, {0, 1}, {1, 0}}
 
-  luaunit.assertTrue(torch.eq(expected, actual))
+  luaunit.assertTrue(torch.eq(actual, expected))
 end
 
-function test_one_hot_to_ints()
+function test_one_hot_to_chars()
+  local alphabet = {a=1, b=2}
   local one_hot = torch.Tensor{{0, 1}, {1, 0}}
 
-  local actual = encoding.one_hot_to_ints(one_hot)
+  local actual = encoding.one_hot_to_chars(alphabet, one_hot)
 
-  local expected = torch.Tensor{2, 1}:long()
+  local expected = 'ba'
 
-  luaunit.assertTrue(torch.eq(expected, actual))
-end
-
-function test_ints_to_chars()
-  local alphabet = {a=1, b=2}
-  local ints = torch.Tensor{1, 2, 1}
-
-  local actual = encoding.ints_to_chars(alphabet, ints)
-
-  local expected = 'aba'
   luaunit.assertEquals(actual, expected)
 end
 

@@ -1,10 +1,9 @@
 local table = require 'std.table'
 local math = require 'std.math'
 local torch = require 'torch'
+local encoding = require 'encoding'
 
-local M = {}
-
-function M.load_text()
+function load_text()
   local f = io.open('input.txt')
   local text = f:read('*a')
   f:close()
@@ -12,7 +11,7 @@ function M.load_text()
   return text
 end
 
-function M.split_indices(indices, split_fractions)
+function split_indices(indices, split_fractions)
   local split_sizes = (split_fractions*indices:size(1)):long()
   local split_points = torch.cat(torch.LongTensor{0}, split_sizes:cumsum())
   local splits = {}
@@ -29,7 +28,7 @@ function make_chunk_iterator(encoded_text, indices, chunk_size, n_symbols)
       local index = indices[i]
       local lower = (index - 1)*chunk_size + 1
       local upper = lower + chunk_size - 1
-      local chunk = ints_to_one_hot(encoded_text[{{lower, upper}}], n_symbols)
+      local chunk = encoding.ints_to_one_hot(encoded_text[{{lower, upper}}], n_symbols)
       coroutine.yield(chunk)
     end
   end
@@ -37,8 +36,8 @@ function make_chunk_iterator(encoded_text, indices, chunk_size, n_symbols)
   return coroutine.wrap(co)
 end
 
-function M.make_chunk_iterators(text, split_fractions, chunk_size)
-  local alphabet, encoded_text = chars_to_ints(text)
+function make_chunk_iterators(text, split_fractions, chunk_size)
+  local alphabet, encoded_text = encoding.chars_to_ints(text)
   local n_chunks = math.floor(#text/chunk_size)
 
   local indices = torch.randperm(n_chunks)
@@ -86,7 +85,7 @@ function make_batch_iterator(chunk_iterator, batch_size)
   return coroutine.wrap(co)
 end
 
-function M.make_batch_iterators(text, split_fractions, chunk_size, batch_size)
+function make_batch_iterators(text, split_fractions, chunk_size, batch_size)
   local alphabet, chunk_iterators = make_chunk_iterators(text, split_fractions, chunk_size)
 
   local batch_iterators = {}
@@ -96,3 +95,12 @@ function M.make_batch_iterators(text, split_fractions, chunk_size, batch_size)
 
   return alphabet, batch_iterators
 end
+
+
+return {
+  make_batch_iterators=make_batch_iterators,
+  testing = {
+    make_chunk_iterators=make_chunk_iterators,
+    split_indices=split_indices
+  }
+}
