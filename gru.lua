@@ -24,8 +24,6 @@ function build_layer(input, input_size, n_neurons)
   local update_compliment_prev = nn.CMulTable()({update_compliment, prev_hidden})
   local next_hidden = nn.CAddTable()({update_candidate, update_compliment_prev})
 
-  nngraph.annotateNodes()
-
   return prev_hidden, next_hidden
 end
 
@@ -33,7 +31,9 @@ function build(n_symbols, n_neurons)
   local input = nn.Identity()()
   local prev_hidden, next_hidden = build_layer(input, n_symbols, n_neurons)
 
-  local gmod = nn.gModule({input, prev_hidden}, {next_hidden})
+  local output = nn.LogSoftMax()(nn.Linear(n_neurons, n_symbols)(next_hidden))
+
+  local gmod = nn.gModule({input, prev_hidden}, {output, next_hidden})
   return gmod
 end
 
