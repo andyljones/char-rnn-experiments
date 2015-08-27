@@ -23,6 +23,14 @@ function chars_to_ints(text)
   return alphabet, encoded
 end
 
+function ints_to_one_hot(ints, width)
+  local height = ints:size()[1]
+  local zeros = torch.zeros(height, width)
+  local indices = ints:view(-1, 1):long()
+  local one_hot = zeros:scatter(2, indices, 1)
+  return one_hot
+end
+
 function generate_chunks(encoded_text, chunk_size)
   n_chunks = math.floor(encoded_text:size()[1]/chunk_size)
   indices =  torch.randperm(n_chunks)
@@ -40,24 +48,36 @@ function generate_chunks(encoded_text, chunk_size)
   return coroutine.create(co)
 end
 
-local text = load_text()
-local alphabet, encoded = chars_to_ints(text)
-local chunk_generator = generate_chunks(encoded, 10)
-print(coroutine.resume(chunk_generator))
-print(coroutine.resume(chunk_generator))
+-- local text = load_text()
+-- local alphabet, encoded = chars_to_ints(text)
+-- local chunk_generator = generate_chunks(encoded, 10)
+-- print(coroutine.resume(chunk_generator))
+-- print(coroutine.resume(chunk_generator))
 
 -- TESTS --
 local luaunit = require('luaunit')
 
 function test_chars_to_ints()
   local text = 'aba'
-  local expected_alphabet = {a=1, b=2}
-  local expected_encoded = torch.Tensor{1, 2, 1}
 
   local actual_alphabet, actual_encoded = chars_to_ints(text)
+
+  local expected_alphabet = {a=1, b=2}
+  local expected_encoded = torch.Tensor{1, 2, 1}
 
   luaunit.assertTrue(torch.eq(expected_encoded, actual_encoded))
   luaunit.assertEquals(expected_alphabet, actual_alphabet)
 end
 
--- luaunit.LuaUnit.run()
+function test_ints_to_one_hot()
+  local ints = torch.Tensor{1, 2, 1}
+  local width = 2
+
+  local actual = ints_to_one_hot(ints, width)
+
+  local expected = torch.Tensor{{1, 0}, {0, 1}, {1, 0}}
+
+  luaunit.assertTrue(torch.eq(expected, actual))
+end
+
+luaunit.LuaUnit.run()
