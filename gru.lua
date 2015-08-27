@@ -1,6 +1,7 @@
 local torch = require 'torch'
 local nn = require 'nn'
-local nngraph = require 'nngraph'
+require 'nngraph'
+require 'graph'
 
 function compose_inputs(input_size, n_neurons, input, prev_hidden)
   local input_to_hidden = nn.Linear(input_size, n_neurons)(input)
@@ -8,8 +9,7 @@ function compose_inputs(input_size, n_neurons, input, prev_hidden)
   return nn.CAddTable()({input_to_hidden, hidden_to_hidden})
 end
 
-function build_layer(input_size, n_neurons)
-  local input = nn.Identity()()
+function build_layer(input, input_size, n_neurons)
   local prev_hidden = nn.Identity()()
 
   local reset_gate = nn.Sigmoid()(compose_inputs(input_size, n_neurons, input, prev_hidden))
@@ -26,8 +26,19 @@ function build_layer(input_size, n_neurons)
 
   nngraph.annotateNodes()
 
-  return input, prev_hidden, next_hidden
+  return prev_hidden, next_hidden
 end
 
-function build(n_symbols, n_neurons, n_layers)
+function build(n_symbols, n_neurons)
+  local input = nn.Identity()()
+  local prev_hidden, next_hidden = build_layer(input, n_symbols, n_neurons)
+
+  local gmod = nn.gModule({input, prev_hidden}, {next_hidden})
+  return gmod
 end
+
+gmod = build(10, 20)
+print(gmod)
+graph.dot(gmod.fg, 'tmp', 'tmp')
+
+-- return {build=build}
