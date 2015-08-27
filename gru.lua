@@ -5,7 +5,7 @@ require 'graph'
 
 function compose_inputs(input_size, n_neurons, input, prev_hidden, name)
   local input_to_hidden = nn.Linear(input_size, n_neurons)(input):annotate{name=name..'-i2h'}
-  local hidden_to_hidden = nn.Linear(n_neurons, n_neurons)(prev_hidden):annotate{name=name..'-i2h'}
+  local hidden_to_hidden = nn.Linear(n_neurons, n_neurons)(prev_hidden):annotate{name=name..'-h2h'}
   return nn.CAddTable()({input_to_hidden, hidden_to_hidden})
 end
 
@@ -22,7 +22,9 @@ function build_cell(input, prev_hidden, input_size, n_neurons)
   local update_compliment_prev = nn.CMulTable()({update_compliment, prev_hidden})
   local next_hidden = nn.CAddTable()({update_candidate, update_compliment_prev})
 
-  return next_hidden
+  local output = nn.LogSoftMax()(nn.Linear(n_neurons, input_size)(next_hidden):annotate{name='out'})
+
+  return next_hidden, output
 end
 
 function share_matched_names(module)
@@ -33,7 +35,7 @@ function share_matched_names(module)
     local module = node.data.module
     local name = node.data.annotations.name
     if name and originals[name] then
-      module:share(originals[name])
+      module:share(originals[name], 'bias', 'weight', 'gradWeight', 'gradBias')
     elseif name then
       originals[name] = module
     end
@@ -49,8 +51,7 @@ function build(n_timesteps, n_symbols, n_neurons)
   local initial_state = nn.Identity()()
   local hidden_state = initial_state
   for i = 1, n_timesteps do
-    local new_hidden_state = build_cell(inputs[i], hidden_state, n_symbols, n_neurons)
-    local output = nn.LogSoftMax()(nn.Linear(n_neurons, n_symbols)(new_hidden_state))
+    local new_hidden_state, output = build_cell(inputs[i], hidden_state, n_symbols, n_neurons)
     outputs[i] = nn.Reshape(-1, 1, n_symbols, false)(output)
     hidden_state = new_hidden_state
   end
