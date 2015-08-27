@@ -9,9 +9,7 @@ function compose_inputs(input_size, n_neurons, input, prev_hidden)
   return nn.CAddTable()({input_to_hidden, hidden_to_hidden})
 end
 
-function build_layer(input, input_size, n_neurons)
-  local prev_hidden = nn.Identity()()
-
+function build_cell(input, prev_hidden, input_size, n_neurons)
   local reset_gate = nn.Sigmoid()(compose_inputs(input_size, n_neurons, input, prev_hidden))
   local reset_hidden = nn.CMulTable()({reset_gate, prev_hidden})
   local transformed_reset_hidden = nn.Linear(n_neurons, n_neurons)(reset_hidden)
@@ -24,28 +22,25 @@ function build_layer(input, input_size, n_neurons)
   local update_compliment_prev = nn.CMulTable()({update_compliment, prev_hidden})
   local next_hidden = nn.CAddTable()({update_candidate, update_compliment_prev})
 
-  return prev_hidden, next_hidden
-end
-
-function build_timestep(n_symbols, n_neurons)
-  local input = nn.Identity()()
-  local prev_hidden, next_hidden = build_layer(input, n_symbols, n_neurons)
-
-  local output = nn.LogSoftMax()(nn.Linear(n_neurons, n_symbols)(next_hidden))
-
-  local gmod = nn.gModule({input, prev_hidden}, {output, next_hidden})
-  return gmod
+  return next_hidden
 end
 
 function build(n_timesteps, n_symbols, n_neurons)
-  local original = build_timestep(n_symbols, n_neurons)
-  local modules = {}
+  local input = nn.Identity()()
+  local inputs = {input:split(n_timesteps)}
+
+  local outputs = {}
+
+  local initial_state = nn.Identity()()
+  local hidden_state = initial_state
   for i = 1, n_timesteps do
-    modules[i] = original:clone()
-    modules[i].criterion = nn.ClassNLLCriterion()
+    hidden_state = build_cell(inputs[i], hidden_state, n_symbols, n_neurons)
+    outputs[i] = nn.LogSoftMax()(nn.Linear(n_neurons, n_symbols)(hidden_state))
   end
 
-  return modules
+  return nn.gModule({input, initial_state}, outputs)
 end
+
+build(10, 20, 20)
 
 return {build=build}
