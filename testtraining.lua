@@ -50,7 +50,7 @@ function check_gradients()
     local index = torch.uniform(0, n_params)
     local numerical_gradient = numerical_gradient(model, input, initial_state, magnitude, index)
     local analytic_gradient = analytic_gradients[index]
-    local relative_error = numerical_gradient/analytic_gradient
+    local relative_error = (numerical_gradient - analytic_gradient)/analytic_gradient
     print(string.format('Analytic: %5f; Numerical: %f. Error: %f', numerical_gradient, analytic_gradient, relative_error))
   end
 end

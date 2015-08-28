@@ -3,6 +3,8 @@ local gru = require 'gru'
 local encoding = require 'encoding'
 local torch = require 'torch'
 local table = require 'std.table'
+require 'nn'
+require 'nngraph'
 require 'optim'
 
 function decode(alphabet, batch)
@@ -14,22 +16,23 @@ function decode(alphabet, batch)
   return results
 end
 
-function batch_one_hot_to_ints(batch)
-  return select(2, batch:max(3)):view(batch:size(1), batch:size(2))
-end
-
 function calculate_loss(output, input)
     local n_samples, n_timesteps, n_symbols = unpack(torch.totable(input:size()))
 
-    local relevant_outputs = output[{{}, {1, -2}}]:clone():view(-1, n_symbols)
-    local targets = batch_one_hot_to_ints(input)[{{}, {2, -1}}]:clone():view(-1)
+    local loss = 0
+    local grad_loss = torch.zeros(n_samples, n_timesteps, n_symbols)
+    for i = 1, n_timesteps - 1 do
+      local timestep_outputs = output[{{}, i}]
+      local timestep_targets = encoding.one_hot_to_ints(input[{{}, i+1}])
+      local criterion = nn.ClassNLLCriterion()
+      local timestep_loss = criterion:forward(timestep_outputs, timestep_targets)
+      local timestep_grad_loss = criterion:backward(timestep_outputs, timestep_targets)
 
-    local criterion = nn.ClassNLLCriterion()
-    local loss = criterion:forward(relevant_outputs, targets)
-    local grad_loss = criterion:backward(relevant_outputs, targets):view(n_samples, n_timesteps - 1, n_symbols)
-    local grad_loss = torch.cat(grad_loss, torch.zeros(n_samples, 1, n_symbols), 2)
+      loss = loss + timestep_loss
+      grad_loss[{{}, i}] = timestep_grad_loss
+    end
 
-    return loss, grad_loss
+    return loss/(n_timesteps - 1), grad_loss
 end
 
 function make_feval(model, training_iterator, n_neurons, grad_clip)
