@@ -3,6 +3,7 @@ local gru = require 'gru'
 local encoding = require 'encoding'
 local torch = require 'torch'
 local table = require 'std.table'
+local initializer = require 'initializer'
 require 'nn'
 require 'nngraph'
 require 'optim'
@@ -56,11 +57,6 @@ function make_feval(model, training_iterator, n_neurons, grad_clip)
   return feval
 end
 
-function initialize(model)
-  local params, grad_params = model:getParameters()
-  params:uniform(-0.08, 0.08)
-end
-
 function build_model(options)
   local text = batcher.load_text()
   local alphabet, batch_iterators = batcher.make_batch_iterators(
@@ -71,7 +67,7 @@ function build_model(options)
                                                                 )
 
   local model = gru.build(options.n_timesteps-1, table.size(alphabet), options.n_neurons)
-  initialize(model)
+  initializer.initialize_network(model)
 
   return model, alphabet, batch_iterators
 end
@@ -82,7 +78,7 @@ function train(options)
   local params, _ = model:getParameters()
 
   for i = 1, options.n_steps do
-    local _, loss = optim.rmsprop(feval, params, optim_state)
+    local _, loss = optim.rmsprop(feval, params, options.optim_state)
     print(i, loss[1])
   end
 end
