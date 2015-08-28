@@ -28,8 +28,10 @@ function make_chunk_iterator(encoded_text, indices, chunk_size, n_symbols)
       local index = indices[i]
       local lower = (index - 1)*chunk_size + 1
       local upper = lower + chunk_size - 1
-      local chunk = encoding.ints_to_one_hot(encoded_text[{{lower, upper}}], n_symbols)
-      coroutine.yield(chunk)
+      local chunk = encoded_text[{{lower, upper}}]
+      local X = encoding.ints_to_one_hot(encoded_text[{{lower, upper - 1}}], n_symbols)
+      local y = encoded_text[{{lower + 1, upper}}]
+      coroutine.yield(X, y)
     end
   end
 
@@ -66,18 +68,21 @@ end
 
 function make_batch_iterator(chunk_iterator, batch_size)
   function co()
-    local batch = {}
+    local Xs = {}
+    local ys = {}
     while true do
-      local chunk = chunk_iterator()
-      if chunk then
-        batch[#batch + 1] = chunk
+      local X, y = chunk_iterator()
+      if X and y then
+        Xs[#Xs + 1] = X
+        ys[#ys + 1] = y
       else
         break
       end
 
-      if #batch == batch_size then
-        coroutine.yield(stack(batch))
-        batch = {}
+      if #Xs == batch_size then
+        coroutine.yield(stack(Xs), stack(ys))
+        Xs = {}
+        ys = {}
       end
     end
   end
