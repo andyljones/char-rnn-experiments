@@ -62,32 +62,42 @@ function initialize(model)
 end
 
 function build_model(options)
-  local n_neurons = options.n_neurons or 128
-  local n_timesteps = options.n_timesteps or 50
-  local n_samples = options.n_samples or 50
-
   local text = batcher.load_text()
-  local alphabet, batch_iterators = batcher.make_batch_iterators(text, torch.Tensor{1}, n_timesteps, n_samples)
+  local alphabet, batch_iterators = batcher.make_batch_iterators(
+                                                                  text,
+                                                                  torch.Tensor(options.split),
+                                                                  options.n_timesteps,
+                                                                  options.n_samples
+                                                                )
 
-  local model = gru.build(n_timesteps - 1, table.size(alphabet), n_neurons)
+  local model = gru.build(options.n_timesteps-1, table.size(alphabet), options.n_neurons)
   initialize(model)
 
   return model, alphabet, batch_iterators
 end
---
-local grad_clip = 5
-local optim_state = {learningRate=5e-3, alpha=0.95}
-local n_neurons = 20
-local n_timesteps = 5
-local model, alphabet, iterators = build_model{n_timesteps=n_timesteps, n_neurons=n_neurons}
-local feval = make_feval(model, iterators[1], n_neurons, grad_clip)
-local params, _ = model:getParameters()
-ab = alphabet
 
-for i = 1, 100 do
-  local _, loss = optim.rmsprop(feval, params, optim_state)
-  print(i, loss[1])
+function train(options)
+  local model, alphabet, iterators = build_model(options)
+  local feval = make_feval(model, iterators[1], options.n_neurons, options.grad_clip)
+  local params, _ = model:getParameters()
+
+  for i = 1, options.n_steps do
+    local _, loss = optim.rmsprop(feval, params, optim_state)
+    print(i, loss[1])
+  end
 end
+
+options = {
+  n_neurons = 128,
+  n_timesteps = 50,
+  n_samples = 50,
+  optim_state = {learningRate=5e-3, alpha=0.95},
+  split = {0.95, 0.05},
+  grad_clip = 5,
+  n_steps = 100
+}
+
+train(options)
 
 return {
   build_model=build_model,
