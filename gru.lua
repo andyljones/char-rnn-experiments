@@ -1,51 +1,47 @@
 local torch = require 'torch'
-local nn = require 'nn'
+local networktools = require 'networktools'
+require 'nn'
 require 'nngraph'
-require 'graph'
 
-function compose_inputs(input_size, n_neurons, input, prev_hidden)
-  local input_to_hidden = nn.Linear(input_size, n_neurons)(input)
-  local hidden_to_hidden = nn.Linear(n_neurons, n_neurons)(prev_hidden)
-  return nn.CAddTable()({input_to_hidden, hidden_to_hidden})
-end
+local M = {}
 
-function build_layer(input, input_size, n_neurons)
-  local prev_hidden = nn.Identity()()
-
-  local reset_gate = nn.Sigmoid()(compose_inputs(input_size, n_neurons, input, prev_hidden))
+function M.build_cell(input, prev_hidden, input_size, n_neurons)
+  local reset_gate = nn.Sigmoid()(networktools.compose_inputs(input_size, n_neurons, input, prev_hidden, 'reset'))
   local reset_hidden = nn.CMulTable()({reset_gate, prev_hidden})
-  local transformed_reset_hidden = nn.Linear(n_neurons, n_neurons)(reset_hidden)
-  local transformed_input = nn.Linear(input_size, n_neurons)(input)
+  local transformed_reset_hidden = nn.Linear(n_neurons, n_neurons)(reset_hidden):annotate{name='trh'}
+  local transformed_input = nn.Linear(input_size, n_neurons)(input):annotate{name='ti'}
   local candidate_hidden = nn.Tanh()(nn.CAddTable()({transformed_input, transformed_reset_hidden}))
 
-  local update_gate = nn.Sigmoid()(compose_inputs(input_size, n_neurons, input, prev_hidden))
+  local update_gate = nn.Sigmoid()(networktools.compose_inputs(input_size, n_neurons, input, prev_hidden, 'update'))
   local update_candidate = nn.CMulTable()({update_gate, candidate_hidden})
   local update_compliment = nn.AddConstant(1)(nn.MulConstant(-1)(update_gate))
   local update_compliment_prev = nn.CMulTable()({update_compliment, prev_hidden})
   local next_hidden = nn.CAddTable()({update_candidate, update_compliment_prev})
 
-  return prev_hidden, next_hidden
+  local output = nn.LogSoftMax()(nn.Linear(n_neurons, input_size)(next_hidden):annotate{name='out'})
+
+  return next_hidden, output
 end
 
-function build_timestep(n_symbols, n_neurons)
+function M.build(n_timesteps, n_symbols, n_neurons)
   local input = nn.Identity()()
-  local prev_hidden, next_hidden = build_layer(input, n_symbols, n_neurons)
+  local inputs = {nn.SplitTable(1, 2)(input):split(n_timesteps)}
 
-  local output = nn.LogSoftMax()(nn.Linear(n_neurons, n_symbols)(next_hidden))
+  local outputs = {}
 
-  local gmod = nn.gModule({input, prev_hidden}, {output, next_hidden})
-  return gmod
-end
-
-function build(n_timesteps, n_symbols, n_neurons)
-  local original = build_timestep(n_symbols, n_neurons)
-  local modules = {}
+  local initial_state = nn.Identity()()
+  local hidden_state = initial_state
   for i = 1, n_timesteps do
-    modules[i] = original:clone()
-    modules[i].criterion = nn.ClassNLLCriterion()
+    local new_hidden_state, output = M.build_cell(inputs[i], hidden_state, n_symbols, n_neurons)
+    outputs[i] = nn.Reshape(-1, 1, n_symbols, false)(output)
+    hidden_state = new_hidden_state
   end
 
-  return modules
+  local output = nn.JoinTable(2)(outputs)
+
+  module = nn.gModule({input, initial_state}, {output, hidden_state})
+  networktools.share_matched_names(module)
+  return module
 end
 
-return {build=build}
+return M

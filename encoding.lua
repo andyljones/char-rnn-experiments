@@ -52,6 +52,7 @@ end
 return {
   chars_to_ints=chars_to_ints,
   ints_to_one_hot=ints_to_one_hot,
+  ints_to_chars=ints_to_chars,
   one_hot_to_ints=one_hot_to_ints,
   one_hot_to_chars=one_hot_to_chars
 }
