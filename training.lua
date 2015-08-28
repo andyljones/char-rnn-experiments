@@ -35,8 +35,9 @@ function calculate_loss(output, y)
 end
 
 function make_feval(model, training_iterator, n_neurons, grad_clip)
-  function feval(_)
-    local _, grad_params = model:getParameters()
+  function feval(x)
+    local params, grad_params = model:getParameters()
+    params:copy(x)
     grad_params:zero()
 
     local X, y = training_iterator()
@@ -56,7 +57,7 @@ function make_feval(model, training_iterator, n_neurons, grad_clip)
 end
 
 function initialize(model)
-  local params, _ = model:getParameters()
+  local params, grad_params = model:getParameters()
   params:uniform(-0.08, 0.08)
 end
 
@@ -75,7 +76,7 @@ function build_model(options)
 end
 --
 local grad_clip = 5
-local optim_state = {learningRate=5e-5, alpha=0.95}
+local optim_state = {learningRate=5e-3, alpha=0.95}
 local n_neurons = 20
 local n_timesteps = 5
 local model, alphabet, iterators = build_model{n_timesteps=n_timesteps, n_neurons=n_neurons}
@@ -83,7 +84,7 @@ local feval = make_feval(model, iterators[1], n_neurons, grad_clip)
 local params, _ = model:getParameters()
 ab = alphabet
 
-for i = 1, 20 do
+for i = 1, 100 do
   local _, loss = optim.rmsprop(feval, params, optim_state)
   print(i, loss[1])
 end
