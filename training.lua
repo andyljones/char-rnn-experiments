@@ -3,6 +3,7 @@ local gru = require 'gru'
 local encoding = require 'encoding'
 local torch = require 'torch'
 local table = require 'std.table'
+require 'optim'
 
 function decode(alphabet, batch)
   local results = {}
@@ -31,37 +32,48 @@ function calculate_loss(output, input)
     return loss, grad_loss
 end
 
-function make_feval(model, n_neurons)
-  function feval(input)
+function make_feval(model, training_iterator, n_neurons, grad_clip)
+  function feval(_)
+    local params, grad_params = model:getParameters()
+    grad_params:zero()
+
+    local input = training_iterator()
+
     local n_samples = input:size(1)
     local initial_state = torch.zeros(n_samples, n_neurons)
     local final_state = torch.zeros(n_samples, n_neurons)
 
     local output, final_state = unpack(model:forward({input, initial_state}))
     local loss, grad_loss = calculate_loss(output, input)
-    local grad_input = model:backward({input, initial_state}, {grad_loss, final_state})
+    model:backward({input, initial_state}, {grad_loss, final_state})
 
-    return model:getParameters()
+    grad_params:clamp(-grad_clip, grad_clip)
+
+    return loss, grad_params
   end
+
+  return feval
 end
 
+function initialize(model)
+  local params, _ = model:getParameters()
+  params:uniform(-0.08, 0.08)
+end
 
-local n_neurons, n_timesteps, n_samples = 20, 10, 2
+local n_neurons, n_timesteps, n_samples = 128, 50, 50
+local grad_clip = 5
+local optim_state = {learningRate = 2e-3, alpha=0.95}
 
 local text = batcher.load_text()
-local alphabet, batch_iterator = batcher.make_batch_iterators(text, torch.Tensor{1}, n_timesteps, n_samples)
+local alphabet, batch_iterators = batcher.make_batch_iterators(text, torch.Tensor{1}, n_timesteps, n_samples)
 
-local initial_state = torch.zeros(n_samples, n_neurons)
-local final_state = torch.zeros(n_samples, n_neurons)
+local training_iterator = batch_iterators[1]
 local model = gru.build(n_timesteps, table.size(alphabet), n_neurons)
+initialize(model)
 
-local input = batch_iterator[1]()
-
-local output, final_state = unpack(model:forward({input, initial_state}))
-local loss, grad_loss = calculate_loss(output, input)
-local grad_input = model:backward({input, initial_state}, {grad_loss, final_state})
--- flat_params, flat_grad_params = model:getParameters()
--- print(flat_grad_params:size())
-local params, grad_params = model:getParameters()
-print(params:size()[1])
-print(table.size(alphabet))
+local feval = make_feval(model, training_iterator, n_neurons, grad_clip)
+local params, _ = model:getParameters()
+for i = 1, 100 do
+  local _, loss = optim.rmsprop(feval, params, optim_state)
+  print(i, loss[1])
+end
