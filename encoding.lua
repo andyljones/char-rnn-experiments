@@ -1,7 +1,9 @@
 local torch = require 'torch'
 local table = require 'std.table'
 
-function chars_to_ints(text)
+local M = {}
+
+function M.chars_to_ints(text)
   local alphabet = {}
   local encoded = torch.Tensor(#text)
   for i = 1, #text do
@@ -14,7 +16,7 @@ function chars_to_ints(text)
   return alphabet, encoded
 end
 
-function ints_to_one_hot(ints, width)
+function M.ints_to_one_hot(ints, width)
   local height = ints:size()[1]
   local zeros = torch.zeros(height, width)
   local indices = ints:view(-1, 1):long()
@@ -22,7 +24,7 @@ function ints_to_one_hot(ints, width)
   return one_hot
 end
 
-function one_hot_to_ints(one_hot)
+function M.one_hot_to_ints(one_hot)
   local _, ints = torch.max(one_hot, 2)
   return ints:view(-1)
 end
@@ -35,7 +37,7 @@ function invert_alphabet(alphabet)
   return inverted
 end
 
-function ints_to_chars(alphabet, ints)
+function M.ints_to_chars(alphabet, ints)
   local decoder = invert_alphabet(alphabet)
   local decoded = {}
   for i = 1, ints:size(1) do
@@ -45,14 +47,8 @@ function ints_to_chars(alphabet, ints)
   return table.concat(decoded)
 end
 
-function one_hot_to_chars(alphabet, one_hot)
-  return ints_to_chars(alphabet, one_hot_to_ints(one_hot))
+function M.one_hot_to_chars(alphabet, one_hot)
+  return M.ints_to_chars(alphabet, M.one_hot_to_ints(one_hot))
 end
 
-return {
-  chars_to_ints=chars_to_ints,
-  ints_to_one_hot=ints_to_one_hot,
-  ints_to_chars=ints_to_chars,
-  one_hot_to_ints=one_hot_to_ints,
-  one_hot_to_chars=one_hot_to_chars
-}
+return M
