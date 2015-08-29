@@ -1,4 +1,4 @@
-local batcher = require 'batcher'
+local batching = require 'batching'
 local gru = require 'gru'
 local encoding = require 'encoding'
 local torch = require 'torch'
@@ -9,18 +9,20 @@ require 'nn'
 require 'nngraph'
 require 'optim'
 
-function make_iterators(options)
-  local text = batcher.load_text()
-  return batcher.make_batch_iterators(text, torch.Tensor(options.split), options.n_timesteps, options.n_samples)
+local M = {}
+
+function M.make_iterators(options)
+  local text = batching.load_text()
+  return batching.make_batch_iterators(text, torch.Tensor(options.split), options.n_timesteps, options.n_samples)
 end
 
-function make_model(options, n_symbols)
+function M.make_model(options, n_symbols)
   local model = gru.build(options.n_samples, options.n_timesteps-1, n_symbols, options.n_neurons)
   initializer.initialize_network(model)
   return model
 end
 
-function calculate_loss(output, y)
+function M.calculate_loss(output, y)
     local n_samples, n_timesteps_minus_1, n_symbols = unpack(torch.totable(output:size()))
     local loss = 0
     local grad_loss = torch.zeros(n_samples, n_timesteps_minus_1, n_symbols)
@@ -38,7 +40,7 @@ function calculate_loss(output, y)
     return loss, grad_loss
 end
 
-function make_trainer(model, training_iterator, grad_clip)
+function M.make_trainer(model, training_iterator, grad_clip)
   function trainer(x)
     local params, grad_params = model:getParameters()
     params:copy(x)
@@ -47,7 +49,7 @@ function make_trainer(model, training_iterator, grad_clip)
     local X, y = training_iterator()
 
     local output, _ = unpack(model:forward({X, model.default_state}))
-    local loss, grad_loss = calculate_loss(output, y)
+    local loss, grad_loss = M.calculate_loss(output, y)
     model:backward({X, model.default_state}, {grad_loss, model.default_state})
 
     grad_params:clamp(-grad_clip, grad_clip)
@@ -58,13 +60,13 @@ function make_trainer(model, training_iterator, grad_clip)
   return trainer
 end
 
-function make_tester(model, testing_iterator, n_test_batches)
+function M.make_tester(model, testing_iterator, n_test_batches)
   function tester()
     local average_loss = 0
     for i = 1, n_test_batches do
       local X, y = testing_iterator()
       local output, _ = unpack(model:forward({X, model.default_state}))
-      local loss, _  = calculate_loss(output, y)
+      local loss, _  = M.calculate_loss(output, y)
       average_loss = average_loss + loss/n_test_batches
     end
     return average_loss
@@ -73,9 +75,9 @@ function make_tester(model, testing_iterator, n_test_batches)
   return tester
 end
 
-function train(model, iterators, saver)
-  local trainer = make_trainer(model, iterators[1], options.grad_clip)
-  local tester = make_tester(model, iterators[2], options.n_test_batches)
+function M.train(model, iterators, saver)
+  local trainer = M.make_trainer(model, iterators[1], options.grad_clip)
+  local tester = M.make_tester(model, iterators[2], options.n_test_batches)
   local params, _ = model:getParameters()
 
   local train_losses, test_losses = {}, {}
@@ -98,12 +100,12 @@ function train(model, iterators, saver)
   end
 end
 
-function run(options)
+function M.run(options)
   local start_time = os.time()
-  local alphabet, iterators = make_iterators(options)
-  local model = make_model(options, table.size(alphabet))
+  local alphabet, iterators = M.make_iterators(options)
+  local model = M.make_model(options, table.size(alphabet))
   local saver = saving.make_saver(options, alphabet, start_time)
-  train(model, iterators, saver)
+  M.train(model, iterators, saver)
 end
 
 options = {
@@ -115,12 +117,9 @@ options = {
   grad_clip = 5,
   n_steps = 1000,
   n_test_batches = 10,
-  testing_interval = 10,
+  testing_interval = 100,
 }
 
-run(options)
+M.run(options)
 
-return {
-  build_model=build_model,
-  calculate_loss=calculate_loss
-}
+return M

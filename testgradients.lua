@@ -1,6 +1,6 @@
 local luaunit = require 'luaunit'
 local torch = require 'torch'
-local batcher = require 'batcher'
+local batching = require 'batching'
 local gru = require 'gru'
 local table = require 'std.table'
 local training = require 'training'
@@ -30,19 +30,16 @@ function analytic_gradients(model, X, y, n_neurons, magnitude)
   grad_params:zero()
 
   local output, _ = unpack(model:forward({X, model.default_state}))
-  local _, grad_loss = calculate_loss(output, y)
+  local _, grad_loss = training.calculate_loss(output, y)
   model:backward({X, model.default_state}, {grad_loss, model.default_state})
 
   return grad_params
 end
 
 function gradient_errors(n_checks, magnitude)
-  local n_samples, n_timesteps, n_neurons = 50, 50, 128
-  local model, _, iterators = training.build_model{
-                                              n_timesteps=n_timesteps,
-                                              n_neurons=n_neurons,
-                                              n_samples=n_samples,
-                                              split={1.}}
+  local options = {n_samples=50, n_timesteps=50, n_neurons=128, split={1.}}
+  local alphabet, iterators = training.make_iterators(options)
+  local model = training.make_model(options, table.size(alphabet))
   local X, y = iterators[1]()
 
   local analytic_gradients = analytic_gradients(model, X, y, n_neurons, magnitude)
@@ -54,7 +51,7 @@ function gradient_errors(n_checks, magnitude)
     local numerical_gradient = numerical_gradient(model, X, y, n_neurons, magnitude, index)
     local analytic_gradient = analytic_gradients[index]
     errors[i] = math.abs(numerical_gradient - analytic_gradient)/analytic_gradient
-    print(string.format('Numerical: %f; Analytic: %f; Error: %f', numerical_gradient, analytic_gradient, errors[i]))
+    -- print(string.format('Numerical: %f; Analytic: %f; Error: %f', numerical_gradient, analytic_gradient, errors[i]))
   end
 
   return errors
