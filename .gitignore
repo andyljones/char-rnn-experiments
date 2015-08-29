@@ -1,6 +1,3 @@
-input.txt
-*.pyc
 *~
 *.swp
 */*.t7
-*-checkpoint.ipynb
