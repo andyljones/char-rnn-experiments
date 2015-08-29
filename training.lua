@@ -4,6 +4,7 @@ local encoding = require 'encoding'
 local torch = require 'torch'
 local table = require 'std.table'
 local initializer = require 'initializer'
+local saving = require 'saving'
 require 'nn'
 require 'nngraph'
 require 'optim'
@@ -72,26 +73,37 @@ function make_tester(model, testing_iterator, n_test_batches)
   return tester
 end
 
-function train(model, iterators)
+function train(model, iterators, saver)
   local trainer = make_trainer(model, iterators[1], options.grad_clip)
   local tester = make_tester(model, iterators[2], options.n_test_batches)
   local params, _ = model:getParameters()
 
+  local train_losses, test_losses = {}, {}
+
   for i = 1, options.n_steps do
     local _, loss = optim.adam(trainer, params, options.optim_state)
+    train_losses[i] = loss
     print(string.format('Batch %4d, loss %4.2f', i, loss[1]))
 
     if i % options.testing_interval == 0 then
       local loss = tester()
+      test_losses[i] = loss
       print(string.format('Test loss %.2f', loss))
+
+      if saver then
+        print(string.format('Saving...'))
+        saver(model, train_losses, test_losses)
+      end
     end
   end
 end
 
 function run(options)
+  local start_time = os.time()
   local alphabet, iterators = make_iterators(options)
   local model = make_model(options, table.size(alphabet))
-  train(model, iterators)
+  local saver = saving.make_saver(options, alphabet, start_time)
+  train(model, iterators, saver)
 end
 
 options = {
@@ -103,7 +115,7 @@ options = {
   grad_clip = 5,
   n_steps = 1000,
   n_test_batches = 10,
-  testing_interval = 100,
+  testing_interval = 10,
 }
 
 run(options)
