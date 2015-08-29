@@ -4,7 +4,7 @@ local encoding = require 'encoding'
 local torch = require 'torch'
 local table = require 'std.table'
 local initializer = require 'initializer'
-local saving = require 'saving'
+local storage = require 'storage'
 require 'nn'
 require 'nngraph'
 require 'optim'
@@ -94,8 +94,12 @@ function M.train(model, iterators, saver)
 
       if saver then
         print(string.format('Saving...'))
-        saver(model, train_losses, test_losses)
+        saver(params, train_losses, test_losses)
       end
+    end
+
+    if i % 10 == 0 then
+      collectgarbage()
     end
   end
 end
@@ -104,7 +108,7 @@ function M.run(options)
   local start_time = os.time()
   local alphabet, iterators = M.make_iterators(options)
   local model = M.make_model(options, table.size(alphabet))
-  local saver = saving.make_saver(options, alphabet, start_time)
+  local saver = storage.make_saver(model, options, alphabet, start_time)
   M.train(model, iterators, saver)
 end
 
@@ -115,7 +119,7 @@ options = {
   optim_state = {learningRate=5e-3, alpha=0.95},
   split = {0.95, 0.05},
   grad_clip = 5,
-  n_steps = 1000,
+  n_steps = 10000,
   n_test_batches = 10,
   testing_interval = 100,
 }

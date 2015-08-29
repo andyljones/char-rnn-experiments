@@ -16,12 +16,22 @@ function M.chars_to_ints(text)
   return alphabet, encoded
 end
 
-function M.ints_to_one_hot(ints, width)
+function M.ints_to_one_hot(ints, n_symbols)
   local height = ints:size()[1]
-  local zeros = torch.zeros(height, width)
+  local zeros = torch.zeros(height, n_symbols)
   local indices = ints:view(-1, 1):long()
   local one_hot = zeros:scatter(2, indices, 1)
   return one_hot
+end
+
+function M.chars_to_one_hot(alphabet, text)
+  local ints = torch.Tensor(#text)
+  for i = 1, #text do
+    local c = text:sub(i, i)
+    ints[i] = alphabet[c]
+  end
+
+  return M.ints_to_one_hot(ints, table.size(alphabet))
 end
 
 function M.one_hot_to_ints(one_hot)
