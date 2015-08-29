@@ -4,32 +4,20 @@ local encoding = require 'encoding'
 local torch = require 'torch'
 local table = require 'std.table'
 local initializer = require 'initializer'
+local saving = require 'saving'
 require 'nn'
 require 'nngraph'
 require 'optim'
 
-function decode(alphabet, batch)
-  local results = {}
-  for i = 1, batch:size(1) do
-    results[i] = encoding.one_hot_to_chars(alphabet, batch[i])
-  end
-
-  return results
+function make_iterators(options)
+  local text = batcher.load_text()
+  return batcher.make_batch_iterators(text, torch.Tensor(options.split), options.n_timesteps, options.n_samples)
 end
 
-function build_model(options)
-  local text = batcher.load_text()
-  local alphabet, batch_iterators = batcher.make_batch_iterators(
-                                                                  text,
-                                                                  torch.Tensor(options.split),
-                                                                  options.n_timesteps,
-                                                                  options.n_samples
-                                                                )
-
-  local model = gru.build(options.n_samples, options.n_timesteps-1, table.size(alphabet), options.n_neurons)
+function make_model(options, n_symbols)
+  local model = gru.build(options.n_samples, options.n_timesteps-1, n_symbols, options.n_neurons)
   initializer.initialize_network(model)
-
-  return model, alphabet, batch_iterators
+  return model
 end
 
 function calculate_loss(output, y)
@@ -85,20 +73,37 @@ function make_tester(model, testing_iterator, n_test_batches)
   return tester
 end
 
-function train(options)
-  local model, alphabet, iterators = build_model(options)
+function train(model, iterators, saver)
   local trainer = make_trainer(model, iterators[1], options.grad_clip)
   local tester = make_tester(model, iterators[2], options.n_test_batches)
   local params, _ = model:getParameters()
 
+  local train_losses, test_losses = {}, {}
+
   for i = 1, options.n_steps do
-    local _, loss = optim.rmsprop(trainer, params, options.optim_state)
-    print(i, loss[1])
+    local _, loss = optim.adam(trainer, params, options.optim_state)
+    train_losses[i] = loss
+    print(string.format('Batch %4d, loss %4.2f', i, loss[1]))
 
     if i % options.testing_interval == 0 then
-      print(tester())
+      local loss = tester()
+      test_losses[i] = loss
+      print(string.format('Test loss %.2f', loss))
+
+      if saver then
+        print(string.format('Saving...'))
+        saver(model, train_losses, test_losses)
+      end
     end
   end
+end
+
+function run(options)
+  local start_time = os.time()
+  local alphabet, iterators = make_iterators(options)
+  local model = make_model(options, table.size(alphabet))
+  local saver = saving.make_saver(options, alphabet, start_time)
+  train(model, iterators, saver)
 end
 
 options = {
@@ -110,13 +115,12 @@ options = {
   grad_clip = 5,
   n_steps = 1000,
   n_test_batches = 10,
-  testing_interval = 100,
+  testing_interval = 10,
 }
 
-train(options)
+run(options)
 
 return {
   build_model=build_model,
-  initialize=initialize,
   calculate_loss=calculate_loss
 }
