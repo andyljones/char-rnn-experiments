@@ -24,8 +24,8 @@ end
 
 function make_chunk_iterator(encoded_text, indices, chunk_size, n_symbols)
   function co()
-    for i = 1, indices:size(1) do
-      local index = indices[i]
+    for i = 1, math.huge do
+      local index = indices[i%indices:size(1) + 1]
       local lower = (index - 1)*chunk_size + 1
       local upper = lower + chunk_size - 1
       local chunk = encoded_text[{{lower, upper}}]

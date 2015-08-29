@@ -23,7 +23,7 @@ function M.build_cell(input, prev_hidden, input_size, n_neurons)
   return next_hidden, output
 end
 
-function M.build(n_timesteps, n_symbols, n_neurons)
+function M.build(n_samples, n_timesteps, n_symbols, n_neurons)
   local input = nn.Identity()()
   local inputs = {nn.SplitTable(1, 2)(input):split(n_timesteps)}
 
@@ -41,6 +41,9 @@ function M.build(n_timesteps, n_symbols, n_neurons)
 
   module = nn.gModule({input, initial_state}, {output, hidden_state})
   networktools.share_matched_names(module)
+
+  module.default_state = torch.zeros(n_samples, n_neurons)
+
   return module
 end
 

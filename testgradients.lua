@@ -7,16 +7,15 @@ local training = require 'training'
 require 'nn'
 
 function numerical_gradient(model, X, y, n_neurons, magnitude, param_index)
-  local zero_state = torch.zeros(X:size(1), n_neurons)
   local params, _ = model:getParameters()
   local original_value = params[param_index]
 
   params[param_index] = original_value + magnitude
-  local first_output, _ = unpack(model:forward({X, zero_state}))
+  local first_output, _ = unpack(model:forward({X, model.default_state}))
   local first_loss, _ = training.calculate_loss(first_output, y)
 
   params[param_index] = original_value - magnitude
-  local second_output, _ = unpack(model:forward({X, zero_state}))
+  local second_output, _ = unpack(model:forward({X, model.default_state}))
   local second_loss, _ = training.calculate_loss(second_output, y)
 
   local gradient = (first_loss - second_loss)/(2*magnitude)
@@ -27,20 +26,23 @@ function numerical_gradient(model, X, y, n_neurons, magnitude, param_index)
 end
 
 function analytic_gradients(model, X, y, n_neurons, magnitude)
-  local zero_state = torch.zeros(X:size(1), n_neurons)
   local _, grad_params = model:getParameters()
   grad_params:zero()
 
-  local output, _ = unpack(model:forward({X, zero_state}))
+  local output, _ = unpack(model:forward({X, model.default_state}))
   local _, grad_loss = calculate_loss(output, y)
-  model:backward({X, zero_state}, {grad_loss, zero_state})
+  model:backward({X, model.default_state}, {grad_loss, model.default_state})
 
   return grad_params
 end
 
 function gradient_errors(n_checks, magnitude)
   local n_samples, n_timesteps, n_neurons = 50, 50, 128
-  local model, _, iterators = training.build_model{n_timesteps=n_timesteps, n_neurons=n_neurons, n_samples=n_samples}
+  local model, _, iterators = training.build_model{
+                                              n_timesteps=n_timesteps,
+                                              n_neurons=n_neurons,
+                                              n_samples=n_samples,
+                                              split={1.}}
   local X, y = iterators[1]()
 
   local analytic_gradients = analytic_gradients(model, X, y, n_neurons, magnitude)
