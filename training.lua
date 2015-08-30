@@ -18,26 +18,26 @@ function M.make_iterators(options)
 end
 
 function M.make_model(options, n_symbols)
-  local model = gru.build(n_symbols, options.n_neurons)
+  local model = gru.build(n_symbols, options.n_neurons, options.n_layers)
   model.params, model.param_grads = model:getParameters()
   initializer.initialize_network(model)
   return model
 end
 
 function M.calculate_loss(output, y)
-    local n_samples, n_timesteps, n_symbols = unpack(torch.totable(output:size()))
-    local loss = 0
-    local grad_loss = torch.zeros(n_samples, n_timesteps, n_symbols)
-    for i = 1, n_timesteps do
-      local criterion = nn.CrossEntropyCriterion()
-      local timestep_loss = criterion:forward(output[{{}, i}], y[{{}, i}])
-      local timestep_grad_loss = criterion:backward(output[{{}, i}], y[{{}, i}])
+  local n_samples, n_timesteps, n_symbols = unpack(torch.totable(output:size()))
+  local loss = 0
+  local grad_loss = torch.zeros(n_samples, n_timesteps, n_symbols)
+  for i = 1, n_timesteps do
+    local criterion = nn.CrossEntropyCriterion()
+    local timestep_loss = criterion:forward(output[{{}, i}], y[{{}, i}])
+    local timestep_grad_loss = criterion:backward(output[{{}, i}], y[{{}, i}])
 
-      loss = loss + timestep_loss/n_timesteps
-      grad_loss[{{}, i}] = timestep_grad_loss/n_timesteps
-    end
+    loss = loss + timestep_loss/n_timesteps
+    grad_loss[{{}, i}] = timestep_grad_loss/n_timesteps
+  end
 
-    return loss, grad_loss
+  return loss, grad_loss
 end
 
 function clip(gradients, threshold)
@@ -139,17 +139,18 @@ function M.run(options)
 end
 
 options = {
-  n_neurons = 256,
+  n_layers = 2,
+  n_neurons = 128,
   n_timesteps = 50,
   n_samples = 50,
   optim_state = {learningRate=5e-3, alpha=0.95},
   split = {0.95, 0.05},
-  grad_clip = 0.5,
+  grad_clip = 5,
   n_steps = 10000,
   n_test_batches = 10,
   testing_interval = 100,
 }
 
--- M.run(options)
+M.run(options)
 
 return M
