@@ -36,5 +36,5 @@ function sample(model, n_timesteps, alphabet, cue, count)
   return results
 end
 
-local model, alphabet, options = storage.load_model('2015-08-29 15-45-15')
+local model, alphabet, options = storage.load_model('2015-08-30 07-13-21')
 sample(model, options.n_timesteps, alphabet, 'Before we proceed any further, he', 100)
