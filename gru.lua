@@ -33,6 +33,7 @@ function M.build(n_samples, n_timesteps, n_symbols, n_neurons)
   local hidden_state = initial_state
   for i = 1, n_timesteps do
     local new_hidden_state, output = M.build_cell(inputs[i], hidden_state, n_symbols, n_neurons)
+    new_hidden_state:annotate{timestep=string.format('hidden-%d', i)}
     outputs[i] = nn.Reshape(-1, 1, n_symbols, false)(output)
     hidden_state = new_hidden_state
   end
