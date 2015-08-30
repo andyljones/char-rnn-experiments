@@ -46,6 +46,8 @@ function M.initialize_network(model)
       M.initialize_biases(module)
     end
   end
+
+  model.param_grads:zero()
 end
 
 return M

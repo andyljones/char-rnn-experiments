@@ -1,5 +1,5 @@
 local batching = require 'batching'
-local gru = require 'gru'
+local gru = require 'rnn'
 local encoding = require 'encoding'
 local torch = require 'torch'
 local table = require 'std.table'
@@ -17,24 +17,23 @@ function M.make_iterators(options)
 end
 
 function M.make_model(options, n_symbols)
-  local model = gru.build(options.n_samples, options.n_timesteps-1, n_symbols, options.n_neurons)
+  local model = gru.build(n_symbols, options.n_neurons)
+  model.params, model.param_grads = model:getParameters()
   initializer.initialize_network(model)
   return model
 end
 
 function M.calculate_loss(output, y)
-    local n_samples, n_timesteps_minus_1, n_symbols = unpack(torch.totable(output:size()))
+    local n_samples, n_timesteps, n_symbols = unpack(torch.totable(output:size()))
     local loss = 0
-    local grad_loss = torch.zeros(n_samples, n_timesteps_minus_1, n_symbols)
-    for i = 1, n_timesteps_minus_1 do
-      local timestep_outputs = output[{{}, i}]
-      local timestep_targets = y[{{}, i}]
-      local criterion = nn.ClassNLLCriterion()
-      local timestep_loss = criterion:forward(timestep_outputs, timestep_targets)
-      local timestep_grad_loss = criterion:backward(timestep_outputs, timestep_targets)
+    local grad_loss = torch.zeros(n_samples, n_timesteps, n_symbols)
+    for i = 1, n_timesteps do
+      local criterion = nn.CrossEntropyCriterion()
+      local timestep_loss = criterion:forward(output[{{}, i}], y[{{}, i}])
+      local timestep_grad_loss = criterion:backward(output[{{}, i}], y[{{}, i}])
 
-      loss = loss + timestep_loss/n_timesteps_minus_1
-      grad_loss[{{}, i}] = timestep_grad_loss/n_timesteps_minus_1
+      loss = loss + timestep_loss
+      grad_loss[{{}, i}] = timestep_grad_loss
     end
 
     return loss, grad_loss
@@ -49,9 +48,8 @@ end
 
 function M.make_trainer(model, training_iterator, grad_clip)
   function trainer(x)
-    local params, grad_params = model:getParameters()
-    params:copy(x)
-    grad_params:zero()
+    model.params:copy(x)
+    model.grad_params:zero()
 
     local X, y = training_iterator()
 
@@ -102,12 +100,11 @@ end
 function M.train(model, iterators, saver)
   local trainer = M.make_trainer(model, iterators[1], options.grad_clip)
   local tester = M.make_tester(model, iterators[2], options.n_test_batches)
-  local params, _ = model:getParameters()
 
   local train_losses, test_losses = {}, {}
 
   for i = 1, options.n_steps do
-    local _, loss = optim.adam(trainer, params, options.optim_state)
+    local _, loss = optim.adam(trainer, model.params, options.optim_state)
     train_losses[i] = loss
     print(string.format('Batch %4d, loss %4.2f', i, loss[1]))
 
@@ -150,6 +147,6 @@ options = {
   testing_interval = 100,
 }
 
-M.run(options)
+-- M.run(options)
 
 return M
