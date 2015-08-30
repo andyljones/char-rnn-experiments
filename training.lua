@@ -120,7 +120,7 @@ function M.train(model, iterators, saver, options)
 
       if saver then
         print(string.format('Saving...'))
-        saver(params, train_losses, test_losses)
+        saver(model.params, train_losses, test_losses)
       end
     end
 
@@ -133,7 +133,7 @@ end
 function M.run(options)
   local start_time = os.time()
   local alphabet, iterators = M.make_iterators(options)
-  local model = M.make_model(options, table.size(alphabet))
+  local model = M.make_model(options, #alphabet)
   local saver = storage.make_saver(model, options, alphabet, start_time)
   M.train(model, iterators, saver, options)
 end

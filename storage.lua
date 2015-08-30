@@ -50,9 +50,7 @@ end
 
 function M.load_model(datestring)
   local constants, checkpoint = M.load(datestring)
-
-  local params, _ = constants.model:getParameters()
-  params:copy(checkpoint.params)
+  constants.model.params:copy(checkpoint.params)
 
   return constants.model, constants.alphabet, constants.options
 end

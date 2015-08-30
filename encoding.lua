@@ -8,9 +8,11 @@ function M.chars_to_ints(text)
   local encoded = torch.Tensor(#text)
   for i = 1, #text do
     local c = text:sub(i, i)
-    if alphabet[c] == nil then alphabet[c] = table.size(alphabet) + 1 end
-    local code = alphabet[c]
-    encoded[i] = code
+    if alphabet[c] == nil then
+      alphabet[#alphabet+1] = c
+      alphabet[c] = #alphabet
+    end
+    encoded[i] = alphabet[c]
   end
 
   return alphabet, encoded
@@ -31,7 +33,7 @@ function M.chars_to_one_hot(alphabet, text)
     ints[i] = alphabet[c]
   end
 
-  return M.ints_to_one_hot(ints, table.size(alphabet))
+  return M.ints_to_one_hot(ints, #alphabet)
 end
 
 function M.one_hot_to_ints(one_hot)
@@ -39,19 +41,10 @@ function M.one_hot_to_ints(one_hot)
   return ints:view(-1)
 end
 
-function invert_alphabet(alphabet)
-  local inverted = {}
-  for char, code in pairs(alphabet) do
-    inverted[code] = char
-  end
-  return inverted
-end
-
 function M.ints_to_chars(alphabet, ints)
-  local decoder = invert_alphabet(alphabet)
   local decoded = {}
   for i = 1, ints:size(1) do
-    decoded[i] = decoder[ints[i]]
+    decoded[i] = alphabet[ints[i]]
   end
 
   return table.concat(decoded)

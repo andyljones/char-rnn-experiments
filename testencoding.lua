@@ -6,7 +6,7 @@ function test_chars_to_ints()
 
   local actual_alphabet, actual_encoded = encoding.chars_to_ints(text)
 
-  local expected_alphabet = {a=1, b=2}
+  local expected_alphabet = {a=1, b=2, [1]='a', [2]='b'}
   local expected_encoded = torch.Tensor{1, 2, 1}
 
   luaunit.assertTrue(torch.eq(actual_encoded, expected_encoded))
@@ -25,7 +25,7 @@ function test_ints_to_one_hot()
 end
 
 function test_one_hot_to_chars()
-  local alphabet = {a=1, b=2}
+  local alphabet = {a=1, b=2, [1]='a', [2]='b'}
   local one_hot = torch.Tensor{{0, 1}, {1, 0}}
 
   local actual = encoding.one_hot_to_chars(alphabet, one_hot)

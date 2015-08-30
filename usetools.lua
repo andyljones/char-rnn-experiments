@@ -12,12 +12,12 @@ function M.make_forward_backward(module, n_timesteps)
   local states = {}
   local last_inputs = {}
 
-  function forward(inputs)
-    last_inputs = inputs
-
+  function forward(inputs, states)
     local n_samples, _, n_symbols = unpack(torch.totable(inputs:size()))
 
-    states = {torch.zeros(n_samples, module.config.n_neurons)}
+    last_inputs = inputs
+    states = states or {torch.zeros(n_samples, module.config.n_neurons)}
+
     local outputs = torch.zeros(n_samples, n_timesteps, n_symbols)
     for i = 1, n_timesteps do
       outputs[{{}, i}], states[i+1] = unpack(modules[i]:forward({last_inputs[{{}, i}], states[i]}))
@@ -26,10 +26,11 @@ function M.make_forward_backward(module, n_timesteps)
     return outputs, modules, states
   end
 
-  function backward(output_grads)
+  function backward(output_grads, state_grads)
     local n_samples, _, n_symbols = unpack(torch.totable(last_inputs:size()))
 
-    local state_grads = {[n_timesteps+1]=torch.zeros(n_samples, modules[1].config.n_neurons)}
+    local state_grads = state_grads or {[n_timesteps+1]=torch.zeros(n_samples, modules[1].config.n_neurons)}
+
     for i = n_timesteps, 1, -1 do
       input_grads, state_grads[i] = unpack(modules[i]:backward({last_inputs[{{}, i}], states[i]}, {output_grads[{{}, i}], state_grads[i+1]}))
     end

@@ -49,10 +49,10 @@ function M.make_chunk_iterators(text, split_fractions, chunk_size)
 
   local iterators = {}
   for _, split in pairs(splits) do
-    iterator = M.make_chunk_iterator(encoded_text, split, chunk_size, table.size(alphabet))
+    iterator = M.make_chunk_iterator(encoded_text, split, chunk_size, #alphabet)
     iterators[#iterators + 1] = iterator
   end
-  
+
   return alphabet, iterators
 end
 
