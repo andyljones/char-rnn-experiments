@@ -24,7 +24,7 @@ end
 function sample(model, n_timesteps, alphabet, cue, count)
   local results = trim_and_pad(cue, n_timesteps, ' ')
   for i = 1, count do
-    local input = results:sub(-n_timesteps, -1)
+    local input = results:sub(-n_timesteps+1, -1)
     local input = encoding.chars_to_one_hot(alphabet, input)
     local input = input:view(1, input:size(1), input:size(2))
     local output, _ = unpack(model:forward({input, model.default_state[{{1}}]}))
@@ -36,5 +36,5 @@ function sample(model, n_timesteps, alphabet, cue, count)
   return results
 end
 
-local model, alphabet, options = storage.load_model('2015-08-30 07-13-21')
-sample(model, options.n_timesteps, alphabet, 'Before we proceed any further, he', 100)
+local model, alphabet, options = storage.load_model('2015-08-30 08-56-34')
+sample(model, options.n_timesteps, alphabet, 'Before we proceed any further, he', 500)
