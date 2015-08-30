@@ -1,5 +1,5 @@
 local batching = require 'batching'
-local gru = require 'gru'
+local gru = require 'rnn'
 local encoding = require 'encoding'
 local torch = require 'torch'
 local table = require 'std.table'
@@ -24,18 +24,16 @@ function M.make_model(options, n_symbols)
 end
 
 function M.calculate_loss(output, y)
-    local n_samples, n_timesteps_minus_1, n_symbols = unpack(torch.totable(output:size()))
+    local n_samples, n_timesteps, n_symbols = unpack(torch.totable(output:size()))
     local loss = 0
-    local grad_loss = torch.zeros(n_samples, n_timesteps_minus_1, n_symbols)
-    for i = 1, n_timesteps_minus_1 do
-      local timestep_outputs = output[{{}, i}]
-      local timestep_targets = y[{{}, i}]
-      local criterion = nn.ClassNLLCriterion()
-      local timestep_loss = criterion:forward(timestep_outputs, timestep_targets)
-      local timestep_grad_loss = criterion:backward(timestep_outputs, timestep_targets)
+    local grad_loss = torch.zeros(n_samples, n_timesteps, n_symbols)
+    for i = 1, n_timesteps do
+      local criterion = nn.CrossEntropyCriterion()
+      local timestep_loss = criterion:forward(output[{{}, i}], y[{{}, i}])
+      local timestep_grad_loss = criterion:backward(output[{{}, i}], y[{{}, i}])
 
-      loss = loss + timestep_loss/n_timesteps_minus_1
-      grad_loss[{{}, i}] = timestep_grad_loss/n_timesteps_minus_1
+      loss = loss + timestep_loss
+      grad_loss[{{}, i}] = timestep_grad_loss
     end
 
     return loss, grad_loss

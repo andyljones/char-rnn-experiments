@@ -8,12 +8,12 @@ local usetools = require 'usetools'
 local encoding = require 'encoding'
 require 'nn'
 
-function numerical_gradient(model, X, y, n_neurons, magnitude, param_index)
+function numerical_gradient(model, X, y, magnitude, param_index)
   local original_value = model.params[param_index]
   local forward, _ = usetools.make_forward_backward(model, X:size(2))
 
   model.params[param_index] = original_value + magnitude
-  local first_outputs, modules, _ = forward(X)
+  local first_outputs, _, _ = forward(X)
   local first_loss, _ = training.calculate_loss(first_outputs, y)
 
   model.params[param_index] = original_value - magnitude
@@ -27,7 +27,7 @@ function numerical_gradient(model, X, y, n_neurons, magnitude, param_index)
   return gradient
 end
 
-function analytic_gradients(model, X, y, n_neurons, magnitude)
+function analytic_gradients(model, X, y)
   local forward, backward = usetools.make_forward_backward(model, X:size(2))
 
   local outputs, modules, states = forward(X)
@@ -49,20 +49,22 @@ function make_input(n_samples, n_timesteps, n_symbols)
 end
 
 function gradient_errors(n_checks, magnitude)
-  local options = {n_samples=2, n_timesteps=3, n_neurons=1, split={1.}}
+  local options = {n_samples=4, n_timesteps=2, n_neurons=1, split={1.}}
   local n_symbols = 2
   local model = training.make_model(options, n_symbols)
-  local X, y = make_input(options.n_samples, options.n_timesteps, n_symbols)
+  -- local X, y = make_input(options.n_samples, options.n_timesteps, n_symbols)
+  local X = torch.Tensor({{{0, 1}, {0, 1}}, {{0, 1}, {0, 1}}, {{0, 1}, {0, 1}}, {{0, 1}, {0, 1}}})[{{1, options.n_samples}, {1, options.n_timesteps}}]
+  local y = torch.Tensor({{1, 2}, {1, 2}, {1, 2}, {1, 2}})[{{1, options.n_samples, {1, options.n_timesteps}}}]
 
-  local analytic_gradients = analytic_gradients(model, X, y, n_neurons, magnitude)
+  local analytic_gradients = analytic_gradients(model, X, y)
 
-  local errors = torch.Tensor(n_checks)
   local n_params = model.params:size(1)
-  for i = 1, n_checks do
-    local index = torch.uniform(1, n_params)
-    local numerical_gradient = numerical_gradient(model, X, y, n_neurons, magnitude, index)
+  local errors = torch.Tensor(n_params)
+  for i = 1, n_params do
+    local index = i--torch.uniform(1, n_params)
+    local numerical_gradient = numerical_gradient(model, X, y, magnitude, index)
     local analytic_gradient = analytic_gradients[index]
-    local error = math.abs(numerical_gradient - analytic_gradient)/(math.abs(analytic_gradient) + math.abs(numerical_gradient))
+    local error = math.abs(numerical_gradient - analytic_gradient)/math.abs(analytic_gradient)
     if error ~= error then errors[i] = 0 else errors[i] = error end
     print(string.format('Numerical: %f; Analytic: %f; Error: %f', numerical_gradient, analytic_gradient, errors[i]))
   end
@@ -76,3 +78,5 @@ function test_gradients()
 end
 
 luaunit.LuaUnit.run()
+
+-- LogSoftMax_updateGradInput
