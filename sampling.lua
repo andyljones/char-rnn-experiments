@@ -33,6 +33,6 @@ function sample(model, alphabet, cue, count, temperature)
   print(outputs)
 end
 
-local model, alphabet, options = storage.load_model('2015-08-30 20-52-56')
+local model, alphabet, options = storage.load_model('2015-08-30 21-06-06')
 local cue = 'We are accounted poor citizens, '
-sample(model, alphabet, cue, 200)
+sample(model, alphabet, cue, 200, 1.)
