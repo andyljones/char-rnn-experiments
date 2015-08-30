@@ -82,6 +82,23 @@ function M.make_tester(model, testing_iterator, n_test_batches)
   return tester
 end
 
+function M.adjust_lr(test_losses, optim_state)
+  local test_iterations = table.sort(table.keys(test_losses))
+  local compacted_losses = torch.Tensor(#test_iterations)
+  for i = 1, #test_iterations do
+    compacted_losses[i] = test_losses[test_iterations[i]]
+  end
+
+  if compacted_losses:size(1) > 5 then
+    local historical_best = compacted_losses[{{1, -6}}]:min()
+    local recent_best = compacted_losses[{{-5, -1}}]:min()
+    if recent_best > historical_best - 0.01 then
+      optim_state.learningRate = 0.1*optim_state.learningRate
+      print(string.format('Learning rate updated to %f', optim_state.learningRate))
+    end
+  end
+end
+
 function M.train(model, iterators, saver)
   local trainer = M.make_trainer(model, iterators[1], options.grad_clip)
   local tester = M.make_tester(model, iterators[2], options.n_test_batches)
@@ -98,6 +115,8 @@ function M.train(model, iterators, saver)
       local loss = tester()
       test_losses[i] = loss
       print(string.format('Test loss %.2f', loss))
+
+      M.adjust_lr(test_losses, options.optim_state)
 
       if saver then
         print(string.format('Saving...'))
