@@ -1,5 +1,5 @@
 local batching = require 'batching'
-local gru = require 'rnn'
+local gru = require 'gru'
 local encoding = require 'encoding'
 local torch = require 'torch'
 local table = require 'std.table'

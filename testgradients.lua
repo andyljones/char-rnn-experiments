@@ -49,19 +49,17 @@ function make_input(n_samples, n_timesteps, n_symbols)
 end
 
 function gradient_errors(n_checks, magnitude)
-  local options = {n_samples=4, n_timesteps=2, n_neurons=1, split={1.}}
+  local options = {n_samples=10, n_timesteps=20, n_neurons=30, split={1.}}
   local n_symbols = 2
   local model = training.make_model(options, n_symbols)
-  -- local X, y = make_input(options.n_samples, options.n_timesteps, n_symbols)
-  local X = torch.Tensor({{{0, 1}, {0, 1}}, {{0, 1}, {0, 1}}, {{0, 1}, {0, 1}}, {{0, 1}, {0, 1}}})[{{1, options.n_samples}, {1, options.n_timesteps}}]
-  local y = torch.Tensor({{1, 2}, {1, 2}, {1, 2}, {1, 2}})[{{1, options.n_samples, {1, options.n_timesteps}}}]
+  local X, y = make_input(options.n_samples, options.n_timesteps, n_symbols)
 
   local analytic_gradients = analytic_gradients(model, X, y)
 
   local n_params = model.params:size(1)
-  local errors = torch.Tensor(n_params)
-  for i = 1, n_params do
-    local index = i--torch.uniform(1, n_params)
+  local errors = torch.Tensor(n_checks)
+  for i = 1, n_checks do
+    local index = torch.uniform(1, n_params)
     local numerical_gradient = numerical_gradient(model, X, y, magnitude, index)
     local analytic_gradient = analytic_gradients[index]
     local error = math.abs(numerical_gradient - analytic_gradient)/math.abs(analytic_gradient)
@@ -78,5 +76,3 @@ function test_gradients()
 end
 
 luaunit.LuaUnit.run()
-
--- LogSoftMax_updateGradInput

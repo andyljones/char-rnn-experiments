@@ -26,7 +26,7 @@ function M.build(n_symbols, n_neurons)
   local prev_hidden = nn.Identity()()
 
   local next_hidden = M.build_cell(input, prev_hidden, n_symbols, n_neurons)
-  local output = nn.LogSoftMax()(nn.Linear(n_neurons, n_symbols)(next_hidden):annotate{name='out'})
+  local output = nn.Linear(n_neurons, n_symbols)(next_hidden):annotate{name='out'}
 
   local module = nn.gModule({input, prev_hidden}, {output, next_hidden})
 
