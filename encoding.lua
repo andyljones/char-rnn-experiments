@@ -39,6 +39,14 @@ function M.one_hot_to_ints(one_hot)
   return ints:view(-1)
 end
 
+function M.probabilistic_one_hot_to_ints(one_hot)
+  local ints = torch.Tensor(one_hot:size(1))
+  for i = 1, one_hot:size(1) do
+    ints[i] = torch.multinomial(torch.exp(one_hot[i]), 1):resize(1)
+  end
+  return ints
+end
+
 function invert_alphabet(alphabet)
   local inverted = {}
   for char, code in pairs(alphabet) do
@@ -55,6 +63,10 @@ function M.ints_to_chars(alphabet, ints)
   end
 
   return table.concat(decoded)
+end
+
+function M.probabilistic_one_hot_to_chars(alphabet, one_hot)
+  return M.ints_to_chars(alphabet, M.probabilistic_one_hot_to_ints(one_hot))
 end
 
 function M.one_hot_to_chars(alphabet, one_hot)
