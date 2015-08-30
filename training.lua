@@ -5,6 +5,7 @@ local torch = require 'torch'
 local table = require 'std.table'
 local initializer = require 'initializer'
 local storage = require 'storage'
+local usetools = require 'usetools'
 require 'nn'
 require 'nngraph'
 require 'optim'
@@ -32,8 +33,8 @@ function M.calculate_loss(output, y)
       local timestep_loss = criterion:forward(output[{{}, i}], y[{{}, i}])
       local timestep_grad_loss = criterion:backward(output[{{}, i}], y[{{}, i}])
 
-      loss = loss + timestep_loss
-      grad_loss[{{}, i}] = timestep_grad_loss
+      loss = loss + timestep_loss/n_timesteps
+      grad_loss[{{}, i}] = timestep_grad_loss/n_timesteps
     end
 
     return loss, grad_loss
@@ -47,30 +48,32 @@ function clip(gradients, threshold)
 end
 
 function M.make_trainer(model, training_iterator, grad_clip)
+  local n_timesteps = training_iterator():size(2)
+  local forward, backward = usetools.make_forward_backward(model, n_timesteps)
   function trainer(x)
     model.params:copy(x)
-    model.grad_params:zero()
-
     local X, y = training_iterator()
 
-    local output, _ = unpack(model:forward({X, model.default_state}))
+    local output = forward(X)
     local loss, grad_loss = M.calculate_loss(output, y)
-    model:backward({X, model.default_state}, {grad_loss, model.default_state})
+    backward(grad_loss)
 
-    clip(grad_params, grad_clip)
+    clip(model.param_grads, grad_clip)
 
-    return loss, grad_params
+    return loss, model.param_grads
   end
 
   return trainer
 end
 
 function M.make_tester(model, testing_iterator, n_test_batches)
+  local n_timesteps = testing_iterator():size(2)
+  local forward, _ = usetools.make_forward_backward(model, n_timesteps)
   function tester()
     local average_loss = 0
     for i = 1, n_test_batches do
       local X, y = testing_iterator()
-      local output, _ = unpack(model:forward({X, model.default_state}))
+      local output = forward(X)
       local loss, _  = M.calculate_loss(output, y)
       average_loss = average_loss + loss/n_test_batches
     end
@@ -97,7 +100,7 @@ function M.adjust_lr(test_losses, optim_state)
   end
 end
 
-function M.train(model, iterators, saver)
+function M.train(model, iterators, saver, options)
   local trainer = M.make_trainer(model, iterators[1], options.grad_clip)
   local tester = M.make_tester(model, iterators[2], options.n_test_batches)
 
@@ -132,11 +135,11 @@ function M.run(options)
   local alphabet, iterators = M.make_iterators(options)
   local model = M.make_model(options, table.size(alphabet))
   local saver = storage.make_saver(model, options, alphabet, start_time)
-  M.train(model, iterators, saver)
+  M.train(model, iterators, saver, options)
 end
 
 options = {
-  n_neurons = 256,
+  n_neurons = 128,
   n_timesteps = 50,
   n_samples = 50,
   optim_state = {learningRate=5e-3, alpha=0.95},
@@ -147,6 +150,6 @@ options = {
   testing_interval = 100,
 }
 
--- M.run(options)
+M.run(options)
 
 return M
