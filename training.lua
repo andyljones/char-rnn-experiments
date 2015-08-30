@@ -40,6 +40,13 @@ function M.calculate_loss(output, y)
     return loss, grad_loss
 end
 
+function clip(gradients, threshold)
+  local magnitude = torch.norm(gradients)
+  if magnitude > threshold then
+    gradients:copy(gradients:mul(threshold/magnitude))
+  end
+end
+
 function M.make_trainer(model, training_iterator, grad_clip)
   function trainer(x)
     local params, grad_params = model:getParameters()
@@ -52,7 +59,7 @@ function M.make_trainer(model, training_iterator, grad_clip)
     local loss, grad_loss = M.calculate_loss(output, y)
     model:backward({X, model.default_state}, {grad_loss, model.default_state})
 
-    grad_params:clamp(-grad_clip, grad_clip)
+    clip(grad_params, grad_clip)
 
     return loss, grad_params
   end
@@ -118,7 +125,7 @@ options = {
   n_samples = 50,
   optim_state = {learningRate=5e-3, alpha=0.95},
   split = {0.95, 0.05},
-  grad_clip = 5,
+  grad_clip = 0.5,
   n_steps = 10000,
   n_test_batches = 10,
   testing_interval = 100,
