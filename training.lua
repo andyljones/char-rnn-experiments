@@ -99,7 +99,7 @@ function M.train(model, iterators, saver, options)
   local train_losses, test_losses = {}, {}
 
   for i = 1, options.n_steps do
-    local _, loss = optim.rmsprop(trainer, model.params, options.optim_state)
+    local _, loss = optim.adam(trainer, model.params, options.optim_state)
     train_losses[i] = loss
     print(string.format('Batch %4d, loss %4.2f', i, loss[1]))
 
@@ -131,11 +131,11 @@ function M.run(options)
 end
 
 options = {
-  n_layers = 2,
-  n_neurons = 128,
+  n_layers = 3,
+  n_neurons = 256,
   n_timesteps = 50,
   n_samples = 50,
-  optim_state = {learningRate=2e-3, alpha=0.95},
+  optim_state = {learningRate=5e-3, alpha=0.95},
   split = {0.95, 0.05},
   grad_clip = 5,
   n_steps = 10000,
