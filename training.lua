@@ -85,19 +85,9 @@ end
 
 function M.adjust_lr(test_losses, optim_state)
   local test_iterations = table.sort(table.keys(test_losses))
-  local compacted_losses = torch.Tensor(#test_iterations)
-  for i = 1, #test_iterations do
-    compacted_losses[i] = test_losses[test_iterations[i]]
-  end
-
-  if compacted_losses:size(1) > 5 then
-    local historical_best = compacted_losses[{{1, -6}}]:min()
-    local recent_best = compacted_losses[{{-5, -1}}]:min()
-    if recent_best > historical_best - 0.01 then
-      optim_state.learningRate = 0.1*optim_state.learningRate
-      print(string.format('Learning rate updated to %f', optim_state.learningRate))
-    end
-  end
+  local latest_iteration = math.max(unpack(test_iterations))
+  optim_state.learningRate = optim_state.learningRate/math.sqrt(latest_iteration)
+  print(string.format('Learning rate is %s', optim_state.learningRate))
 end
 
 function M.train(model, iterators, saver, options)
@@ -143,7 +133,7 @@ options = {
   n_neurons = 128,
   n_timesteps = 50,
   n_samples = 50,
-  optim_state = {learningRate=5e-3, alpha=0.95},
+  optim_state = {learningRate=1e-2, alpha=0.95},
   split = {0.95, 0.05},
   grad_clip = 5,
   n_steps = 10000,

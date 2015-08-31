@@ -16,7 +16,7 @@ end
 
 function sample(model, alphabet, cue, count, temperature)
   local forward, _ = usetools.make_forward_backward(model, 1)
-  local states = {torch.zeros(1, model.config.n_neurons)}
+  local states = {torch.zeros(1, model.config.n_layers, model.config.n_neurons)}
   for i = 1, #cue - 1 do
     local input = encoding.chars_to_one_hot(alphabet, cue:sub(i,i)):view(1, 1, -1)
     _, _, states = forward(input, {states[1]})
@@ -33,6 +33,6 @@ function sample(model, alphabet, cue, count, temperature)
   print(outputs)
 end
 
-local model, alphabet, options = storage.load_model('2015-08-30 21-06-06')
+local model, alphabet, options = storage.load_model('2015-08-31 09-08-11')
 local cue = 'We are accounted poor citizens, '
 sample(model, alphabet, cue, 200, 1.)
