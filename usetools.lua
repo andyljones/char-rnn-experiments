@@ -27,6 +27,7 @@ function M.make_forward_backward(module, n_timesteps)
   end
 
   function backward(output_grads, state_grads)
+    module.param_grads:zero()
     local n_samples, _, n_symbols = unpack(torch.totable(last_inputs:size()))
 
     local state_grads = state_grads or {[n_timesteps+1]=torch.zeros(n_samples, modules[1].config.n_layers, modules[1].config.n_neurons)}
