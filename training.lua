@@ -132,8 +132,8 @@ function M.run(options)
 end
 
 options = {
-  n_layers = 2,
-  n_neurons = 128,
+  n_layers = 1,
+  n_neurons = 256,
   n_timesteps = 50,
   n_samples = 50,
   optim_state = {learningRate=2e-3, alpha=0.95},
