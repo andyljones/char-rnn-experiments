@@ -7,7 +7,7 @@ local M = {}
 
 function M.orthogonal_init(mat)
   assert(mat:size(1) == mat:size(2))
-  local initScale = 1.05
+  local initScale = 1.2
   local M = torch.randn(mat:size(1), mat:size(1))
   local Q, R = torch.qr(M)
   local Q = Q:mul(initScale)
