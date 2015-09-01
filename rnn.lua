@@ -6,7 +6,7 @@ require 'nngraph'
 local M = {}
 
 function M.build_cell(input, prev_hidden, input_size, n_neurons, layer)
-  local hidden = nn.Tanh()(buildtools.compose_inputs(input_size, n_neurons, input, prev_hidden, ''))
+  local hidden = nn.ReLU()(buildtools.compose_inputs(input_size, n_neurons, input, prev_hidden, '1'))
 
   return hidden
 end

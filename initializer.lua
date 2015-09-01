@@ -7,7 +7,7 @@ local M = {}
 
 function M.orthogonal_init(mat)
   assert(mat:size(1) == mat:size(2))
-  local initScale = 1.1
+  local initScale = 1.
   local M = torch.randn(mat:size(1), mat:size(1))
   local Q, R = torch.qr(M)
   local Q = Q:mul(initScale)
@@ -22,13 +22,13 @@ function M.glorot_init(mat)
 end
 
 function M.initialize_weights(module)
-  -- local weights = module.weight
-  -- if weights:size(1) == weights:size(2) then
-  --   M.orthogonal_init(weights)
-  -- else
-  --   M.glorot_init(weights)
-  -- end
-  module.weight:uniform(-0.08, 0.08)
+  local weights = module.weight
+  if weights:size(1) == weights:size(2) then
+    M.orthogonal_init(weights)
+  else
+    M.glorot_init(weights)
+  end
+  -- module.weight:uniform(-0.08, 0.08)
 end
 
 function M.initialize_biases(module)

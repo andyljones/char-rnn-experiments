@@ -132,7 +132,7 @@ function M.run(options)
 end
 
 options = {
-  n_layers = 2,
+  n_layers = 1,
   n_neurons = 128,
   n_timesteps = 50,
   n_samples = 50,
