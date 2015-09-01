@@ -6,8 +6,8 @@ require 'nngraph'
 local M = {}
 
 function M.build_cell(input, prev_hidden, input_size, n_neurons, layer)
-  local hidden = nn.ReLU()(buildtools.compose_inputs(input_size, n_neurons, input, prev_hidden, ''))
-  local hidden_2 = nn.ReLU()(nn.Linear(n_neurons, n_neurons)(hidden):annotate{name='hidden-2'})
+  local hidden = nn.ReLU()(buildtools.compose_inputs(input_size, n_neurons, input, prev_hidden, '1'))
+  local hidden_2 = nn.ReLU()(buildtools.compose_inputs(input_size, n_neurons, input, hidden, '2'))
 
   return hidden_2
 end
