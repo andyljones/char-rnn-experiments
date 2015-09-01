@@ -133,13 +133,13 @@ end
 
 options = {
   n_layers = 1,
-  n_neurons = 256,
+  n_neurons = 128,
   n_timesteps = 50,
   n_samples = 50,
   optim_state = {learningRate=2e-3, alpha=0.95},
   split = {0.95, 0.05},
   grad_clip = 5,
-  n_steps = 4000,
+  n_steps = 10000,
   n_test_batches = 10,
   testing_interval = 100,
 }
