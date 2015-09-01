@@ -19,7 +19,7 @@ function M.make_iterators(options)
 end
 
 function M.make_model(options, n_symbols)
-  local model = rnn.build(n_symbols, options.n_neurons, options.n_layers)
+  local model = gru.build(n_symbols, options.n_neurons, options.n_layers)
   model.params, model.param_grads = model:getParameters()
   initializer.initialize_network(model)
   return model
