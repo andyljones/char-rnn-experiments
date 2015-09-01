@@ -7,7 +7,6 @@ local M = {}
 
 function M.build_cell(input, prev_hidden, input_size, n_neurons, layer)
   local hidden = nn.ReLU()(buildtools.compose_inputs(input_size, n_neurons, input, prev_hidden, ''))
-  local normalized = nn.BatchNormalization(n_neurons)(hidden)
 
   return hidden
 end
@@ -25,9 +24,11 @@ function M.build(n_symbols, n_neurons, n_layers)
 
   local next_hiddens = {M.build_cell(input, prev_hiddens[1], n_symbols, n_neurons, tostring(1))}
   for i = 2, n_layers do
+    next_hiddens[i-1] = nn.BatchNormalization(n_neurons)(next_hiddens[i-1])
     next_hiddens[i] = M.build_cell(next_hiddens[i-1], prev_hiddens[i], n_neurons, n_neurons, tostring(i))
   end
 
+  next_hiddens[n_layers] = nn.BatchNormalization(n_neurons)(next_hiddens[n_layers])
   local output = nn.Linear(n_neurons, n_symbols)(next_hiddens[n_layers]):annotate{name='out'}
 
   for i = 1, n_layers do next_hiddens[i] = nn.Reshape(1, n_neurons, true)(next_hiddens[i]) end
