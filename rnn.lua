@@ -1,35 +1,50 @@
 local torch = require 'torch'
-local networktools = require 'networktools'
+local buildtools = require 'buildtools'
 require 'nn'
 require 'nngraph'
 
 local M = {}
 
-function M.build_cell(input, prev_hidden, input_size, n_neurons)
-  local hidden = nn.Tanh()(networktools.compose_inputs(input_size, n_neurons, input, prev_hidden, ''))
-  local output = nn.LogSoftMax()(nn.Linear(n_neurons, input_size)(hidden):annotate{name='out'})
+function M.build_cell(input, prev_hidden, input_size, n_neurons, layer)
+  local hidden = nn.Tanh()(buildtools.compose_inputs(input_size, n_neurons, input, prev_hidden, ''))
 
-  return hidden, output
+  return hidden
 end
 
-function M.build(n_timesteps, n_symbols, n_neurons)
+function M.build(n_symbols, n_neurons, n_layers)
   local input = nn.Identity()()
-  local inputs = {nn.SplitTable(1, 2)(input):split(n_timesteps)}
+  local prev_hidden = nn.Identity()()
+  local prev_hiddens
 
-  local outputs = {}
-
-  local initial_state = nn.Identity()()
-  local hidden_state = initial_state
-  for i = 1, n_timesteps do
-    local new_hidden_state, output = M.build_cell(inputs[i], hidden_state, n_symbols, n_neurons)
-    outputs[i] = nn.Reshape(-1, 1, n_symbols, false)(output)
-    hidden_state = new_hidden_state
+  if n_layers > 1 then
+    prev_hiddens = {nn.SplitTable(1, 2)(prev_hidden):split(n_layers)}
+  else
+    prev_hiddens = {nn.Reshape(n_neurons, true)(prev_hidden)}
   end
 
-  local output = nn.JoinTable(2)(outputs)
+  local next_hiddens = {M.build_cell(input, prev_hiddens[1], n_symbols, n_neurons, tostring(1))}
+  for i = 2, n_layers do
+    next_hiddens[i] = M.build_cell(next_hiddens[i-1], prev_hiddens[i], n_neurons, n_neurons, tostring(i))
+  end
 
-  module = nn.gModule({input, initial_state}, {output, hidden_state})
-  -- networktools.share_matched_names(module)
+  local output = nn.Linear(n_neurons, n_symbols)(next_hiddens[n_layers]):annotate{name='out'}
+
+  for i = 1, n_layers do next_hiddens[i] = nn.Reshape(1, n_neurons, true)(next_hiddens[i]) end
+
+  local next_hidden
+  if n_layers > 1 then
+    next_hidden = nn.JoinTable(1, 2)(next_hiddens)
+  else
+    next_hidden = next_hiddens[1]
+  end
+
+  local module = nn.gModule({input, prev_hidden}, {output, next_hidden})
+
+  module.config = {}
+  module.config.n_layers = n_layers
+  module.config.n_neurons = n_neurons
+  module.config.n_symbols = n_symbols
+
   return module
 end
 

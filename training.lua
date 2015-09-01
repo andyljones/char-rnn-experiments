@@ -1,5 +1,6 @@
 local batching = require 'batching'
 local gru = require 'gru'
+local rnn = require 'rnn'
 local encoding = require 'encoding'
 local torch = require 'torch'
 local table = require 'std.table'
@@ -18,7 +19,7 @@ function M.make_iterators(options)
 end
 
 function M.make_model(options, n_symbols)
-  local model = gru.build(n_symbols, options.n_neurons, options.n_layers)
+  local model = rnn.build(n_symbols, options.n_neurons, options.n_layers)
   model.params, model.param_grads = model:getParameters()
   initializer.initialize_network(model)
   return model
