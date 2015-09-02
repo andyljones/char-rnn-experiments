@@ -1,5 +1,9 @@
+From the reddit thread
+- benanne [links a paper](http://arxiv.org/abs/1312.6026) that's similar to this work. Models (2b) and (2b\*) are very similar to the ones I'm looking at. They've reminded me that [one experiment I carried out but didn't follow up on](https://github.com/andyljones/char-rnn-experiments/commit/7659f1f6) was the importance of feeding the inputs to second inter-step layer.
 - benanne, mostly_reasonable and solus in [the Reddit thread](https://www.reddit.com/r/MachineLearning/comments/3j9sdj/experiment_log_matching_gru_performance_with/) are interested in whether the improvements come from the simple increase in the number of parameters. My intuition is that it doesn't since the GRU has more params than any of the simple RNNs, but an experiment addressing this would be useful.
 - derRoller in [the Reddit thread](https://www.reddit.com/r/MachineLearning/comments/3j9sdj/experiment_log_matching_gru_performance_with/) is curious  whether additional GRU layers between timesteps would also improve performance. I'd guess that it does, but for my current matching-GRUs-with-RNN investigation it isn't a priority to look in to.
+
+On investigating memory
 - I'd like a more specific experiment on network memory. My hypothesis is that multiple in-time layers allow the simple RNN to remember things like the GRU does, but the Shakespeare task doesn't explicitly show this. Something like parenthesis matching would be good to look into. I think the NTM and stack-augmenting papers have several experiments along these lines.
 - For the same reason, I think very small networks with only a handful of cells would be worth looking into. How does the recall capacity of RNNs scale with their size? In sufficiently small networks, could we effectively visualize it learning to memorize?
 - Karpathy's RNN visualization work might be useful in demonstrating that the simple RNN does/doesn't learn to reference long-past characters.
