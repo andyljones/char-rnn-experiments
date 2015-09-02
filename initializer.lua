@@ -30,11 +30,11 @@ end
 function M.initialize_weights(module)
   local weights = module.weight
   if weights:size(1) == weights:size(2) then
-    M.orthogonal_init(weights)
+    weights:eye(weights:size(1))
+    -- M.orthogonal_init(weights)
   else
     M.glorot_init(weights)
   end
-  -- module.weight:uniform(-0.08, 0.08)
 end
 
 function M.initialize_biases(module)
@@ -50,21 +50,10 @@ function M.initialize_network(model)
     local module = node.data.module
     local name = node.data.annotations.name
     if name and not visited[name] then
-      if name == '1-h2h' then
-        h2hs[1] = module.weight
-        print('1 initialized')
-      elseif name == '2-h2h' then
-        h2hs[2] = module.weight
-        print('2 initialized')
-      else
-        M.initialize_weights(module)
-      end
+      M.initialize_weights(module)
       M.initialize_biases(module)
     end
   end
-
-  M.orthogonal_init(h2hs[1])
-  h2hs[2]:copy(h2hs[1]:t())
 
   model.param_grads:zero()
 end
