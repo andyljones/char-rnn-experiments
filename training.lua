@@ -116,21 +116,23 @@ function M.run(options)
   local start_time = os.time()
   local alphabet, iterators = M.make_iterators(options)
   local model = M.make_model(options, #alphabet)
+  print(string.format('This model has %d parameters', model.params:size(1)))
+
   local saver = storage.make_saver(model, options, alphabet, start_time)
   M.train(model, iterators, saver, options)
 end
 
 options = {
   n_layers = 1,
-  n_neurons = 173,
+  n_neurons = 160,
   n_timesteps = 50,
   n_samples = 50,
   optim_state = {learningRate=4e-3, alpha=0.95},
   split = {0.95, 0.05},
   grad_clip = 5,
   n_steps = 10000,
-  n_test_batches = 10,
-  testing_interval = 100,
+  n_test_batches = 100,
+  testing_interval = 1000,
 }
 
 M.run(options)

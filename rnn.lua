@@ -51,8 +51,8 @@ end
 
 function calculate_n_neurons(n_symbols, n_steps, n_params)
   local a = n_steps
-  local b = (2*n_symbols + n_steps + 1)
-  local c = n_symbols - n_params
+  local b = (n_steps*n_symbols + n_steps + 1 + n_symbols)
+  local c = n_steps*n_symbols - n_params
   local n = (-b + math.sqrt(b^2 - 4*a*c))/(2*a)
   return n
 end
