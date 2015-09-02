@@ -13,7 +13,6 @@ function M.orthogonal_init(mat)
   local Q = Q:mul(initScale)
 
   mat:copy(Q)
-  mat[{{1, 32}, {1, 32}}]:eye(32, 32)
 end
 
 function M.identity_init(mat)
