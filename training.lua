@@ -116,6 +116,7 @@ function M.run(options)
   local start_time = os.time()
   local alphabet, iterators = M.make_iterators(options)
   local model = M.make_model(options, #alphabet)
+  print(model.params:size())
   local saver = storage.make_saver(model, options, alphabet, start_time)
   M.train(model, iterators, saver, options)
 end
