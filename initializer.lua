@@ -13,6 +13,7 @@ function M.orthogonal_init(mat)
   local Q = Q:mul(initScale)
 
   mat:copy(Q)
+  mat[{{1, 32}, {1, 32}}]:eye(32, 32)
 end
 
 function M.identity_init(mat)
@@ -33,12 +34,11 @@ end
 
 function M.initialize_weights(module)
   local weights = module.weight
-  -- if weights:size(1) == weights:size(2) then
-  --   M.orthogonal_init(weights)
-  -- else
-  --   M.glorot_init(weights)
-  -- end
-  M.identity_init(weights)
+  if weights:size(1) == weights:size(2) then
+    M.orthogonal_init(weights)
+  else
+    M.glorot_init(weights)
+  end
 end
 
 function M.initialize_biases(module)
