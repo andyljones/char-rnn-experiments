@@ -84,15 +84,6 @@ function M.make_tester(model, testing_iterator, n_test_batches)
   return tester
 end
 
-function M.adjust_lr(test_losses, optim_state)
-  if not optim_state.initialLearningRate then
-    optim_state.initialLearningRate = optim_state.learningRate
-  end
-  local test_iterations = table.sort(table.keys(test_losses))
-  optim_state.learningRate = optim_state.initialLearningRate*0.99^#test_iterations
-  print(string.format('Learning rate is %s', optim_state.learningRate))
-end
-
 function M.train(model, iterators, saver, options)
   local trainer = M.make_trainer(model, iterators[1], options.grad_clip)
   local tester = M.make_tester(model, iterators[2], options.n_test_batches)
@@ -108,8 +99,6 @@ function M.train(model, iterators, saver, options)
       local loss = tester()
       test_losses[i] = loss
       print(string.format('Test loss %.2f', loss))
-
-      M.adjust_lr(test_losses, options.optim_state)
 
       if saver then
         print(string.format('Saving...'))
