@@ -124,7 +124,7 @@ end
 
 options = {
   n_layers = 1,
-  n_neurons = 160,
+  n_neurons = 128,
   n_timesteps = 50,
   n_samples = 50,
   optim_state = {learningRate=4e-3, alpha=0.95},
