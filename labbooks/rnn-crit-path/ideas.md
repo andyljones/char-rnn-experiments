@@ -9,4 +9,4 @@ On investigating memory
 - Karpathy's RNN visualization work might be useful in demonstrating that the simple RNN does/doesn't learn to reference long-past characters.
 
 Other
-- One big difference between the RNN and GRU experiments is that the RNN uses relu nonlinearities while the GRU uses tanh. This is somewhat justified by the fact that I've never seen a GRU use a relu, but [this paper](http://bigml.cs.tsinghua.edu.cn/~jun/pub/lstm-parallel.pdf) suggests that LSTMs do better with 'steeper' nonlinearities. What happens if I replace the tanh/sigmoids with the piecewise linear nonlinearities they suggest?
+- One big difference between the RNN and GRU experiments is that the RNN uses relu nonlinearities while the GRU uses tanh. This is somewhat justified by the fact that I've never seen a GRU use a relu, but [Lyu & Zhu](https://github.com/huashiyiqike/LSTM-MATLAB) suggest that LSTMs do better with 'steeper' nonlinearities. What happens if I replace the tanh/sigmoids with the piecewise linear nonlinearities they suggest?
