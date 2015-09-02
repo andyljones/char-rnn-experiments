@@ -5,14 +5,17 @@ local M = {}
 
 function M.chars_to_ints(text)
   local alphabet = {}
+  local probs = {}
   local encoded = torch.Tensor(#text)
   for i = 1, #text do
     local c = text:sub(i, i)
     if alphabet[c] == nil then
       alphabet[#alphabet+1] = c
       alphabet[c] = #alphabet
+      probs[c] = 0
     end
     encoded[i] = alphabet[c]
+    probs[c] = probs[c] + 1/#text
   end
 
   return alphabet, encoded

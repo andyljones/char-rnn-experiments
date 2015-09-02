@@ -84,15 +84,6 @@ function M.make_tester(model, testing_iterator, n_test_batches)
   return tester
 end
 
-function M.adjust_lr(test_losses, optim_state)
-  if not optim_state.initialLearningRate then
-    optim_state.initialLearningRate = optim_state.learningRate
-  end
-  local test_iterations = table.sort(table.keys(test_losses))
-  optim_state.learningRate = optim_state.initialLearningRate*0.99^#test_iterations
-  print(string.format('Learning rate is %s', optim_state.learningRate))
-end
-
 function M.train(model, iterators, saver, options)
   local trainer = M.make_trainer(model, iterators[1], options.grad_clip)
   local tester = M.make_tester(model, iterators[2], options.n_test_batches)
@@ -108,8 +99,6 @@ function M.train(model, iterators, saver, options)
       local loss = tester()
       test_losses[i] = loss
       print(string.format('Test loss %.2f', loss))
-
-      M.adjust_lr(test_losses, options.optim_state)
 
       if saver then
         print(string.format('Saving...'))
@@ -127,6 +116,8 @@ function M.run(options)
   local start_time = os.time()
   local alphabet, iterators = M.make_iterators(options)
   local model = M.make_model(options, #alphabet)
+  print(string.format('This model has %d parameters', model.params:size(1)))
+
   local saver = storage.make_saver(model, options, alphabet, start_time)
   M.train(model, iterators, saver, options)
 end
@@ -136,12 +127,12 @@ options = {
   n_neurons = 128,
   n_timesteps = 50,
   n_samples = 50,
-  optim_state = {learningRate=2e-3, alpha=0.95},
+  optim_state = {learningRate=1e-3, alpha=0.95},
   split = {0.95, 0.05},
   grad_clip = 5,
   n_steps = 10000,
-  n_test_batches = 10,
-  testing_interval = 100,
+  n_test_batches = 100,
+  testing_interval = 1000,
 }
 
 M.run(options)

@@ -6,9 +6,11 @@ require 'nngraph'
 local M = {}
 
 function M.build_cell(input, prev_hidden, input_size, n_neurons, layer)
-  local hidden = nn.ReLU()(buildtools.compose_inputs(input_size, n_neurons, input, prev_hidden, '1'))
+  local hidden_1 = nn.ReLU()(buildtools.compose_inputs(input_size, n_neurons, input, prev_hidden, '1'))
+  local hidden_2 = nn.ReLU()(buildtools.compose_inputs(input_size, n_neurons, input, hidden_1, '2'))
+  local hidden_3 = nn.ReLU()(buildtools.compose_inputs(input_size, n_neurons, input, hidden_2, '3'))
 
-  return hidden
+  return hidden_3
 end
 
 function M.build(n_symbols, n_neurons, n_layers)
@@ -46,6 +48,14 @@ function M.build(n_symbols, n_neurons, n_layers)
   module.config.n_symbols = n_symbols
 
   return module
+end
+
+function calculate_n_neurons(n_symbols, n_steps, n_params)
+  local a = n_steps
+  local b = (n_steps*n_symbols + n_steps + 1 + n_symbols)
+  local c = n_steps*n_symbols - n_params
+  local n = (-b + math.sqrt(b^2 - 4*a*c))/(2*a)
+  return n
 end
 
 return M

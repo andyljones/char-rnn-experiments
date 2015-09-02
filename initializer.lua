@@ -7,7 +7,7 @@ local M = {}
 
 function M.orthogonal_init(mat)
   assert(mat:size(1) == mat:size(2))
-  local initScale = 1.
+  local initScale = 1.1
   local M = torch.randn(mat:size(1), mat:size(1))
   local Q, R = torch.qr(M)
   local Q = Q:mul(initScale)
@@ -15,9 +15,19 @@ function M.orthogonal_init(mat)
   mat:copy(Q)
 end
 
-function M.glorot_init(mat)
+function M.identity_init(mat)
+  mat:eye(mat:size(1), mat:size(2))
+end
+
+function M.glorot_init(mat, relu)
+  local relu = relu or false
   local n_in, n_out = mat:size(1), mat:size(2)
   local limit = math.sqrt(6/(n_in + n_out))
+
+  if relu then
+    limit = math.sqrt(2)*limit
+  end
+
   mat:uniform(-limit, limit)
 end
 
@@ -28,7 +38,6 @@ function M.initialize_weights(module)
   else
     M.glorot_init(weights)
   end
-  -- module.weight:uniform(-0.08, 0.08)
 end
 
 function M.initialize_biases(module)
@@ -38,6 +47,7 @@ end
 function M.initialize_network(model)
   local nodes = model.fg.nodes
   local visited = {}
+  local h2hs = {}
   for i = 1, #nodes do
     local node = nodes[i]
     local module = node.data.module
