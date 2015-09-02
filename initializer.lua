@@ -15,9 +15,15 @@ function M.orthogonal_init(mat)
   mat:copy(Q)
 end
 
-function M.glorot_init(mat)
+function M.glorot_init(mat, relu)
+  local relu = relu or false
   local n_in, n_out = mat:size(1), mat:size(2)
   local limit = math.sqrt(6/(n_in + n_out))
+
+  if relu then
+    limit = math.sqrt(2)*limit
+  end
+
   mat:uniform(-limit, limit)
 end
 
