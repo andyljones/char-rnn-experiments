@@ -5,15 +5,22 @@ local M = {}
 
 function M.chars_to_ints(text)
   local alphabet = {}
+  local probs = {}
   local encoded = torch.Tensor(#text)
   for i = 1, #text do
     local c = text:sub(i, i)
     if alphabet[c] == nil then
       alphabet[#alphabet+1] = c
       alphabet[c] = #alphabet
+      probs[c] = 0
     end
     encoded[i] = alphabet[c]
+    probs[c] = probs[c] + 1/#text
   end
+
+  local probs = torch.Tensor(probs)
+  alphabet.means = probs:clone():resize(1, -1)
+  alphabet.stds = torch.sqrt(torch.cmul(probs, torch.mul(probs, -1) + 1)):resize(1, -1)
 
   return alphabet, encoded
 end
@@ -33,7 +40,10 @@ function M.chars_to_one_hot(alphabet, text)
     ints[i] = alphabet[c]
   end
 
-  return M.ints_to_one_hot(ints, #alphabet)
+  local means = torch.repeatTensor(alphabet.means, #text, 1)
+  local std = torch.repeatTensor(alphabet.stds, #text, 1)
+
+  return M.ints_to_one_hot(ints, #alphabet):add(-1, means):cdiv(std)
 end
 
 function M.one_hot_to_ints(one_hot)
