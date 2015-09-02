@@ -30,11 +30,11 @@ end
 function M.initialize_weights(module)
   local weights = module.weight
   if weights:size(1) == weights:size(2) then
-    weights:eye(weights:size(1))
-    -- M.orthogonal_init(weights)
+    M.orthogonal_init(weights)
   else
     M.glorot_init(weights)
   end
+  -- module.weight:uniform(-0.08, 0.08)
 end
 
 function M.initialize_biases(module)
