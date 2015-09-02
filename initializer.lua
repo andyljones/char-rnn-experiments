@@ -44,15 +44,27 @@ end
 function M.initialize_network(model)
   local nodes = model.fg.nodes
   local visited = {}
+  local h2hs = {}
   for i = 1, #nodes do
     local node = nodes[i]
     local module = node.data.module
     local name = node.data.annotations.name
     if name and not visited[name] then
-      M.initialize_weights(module)
+      if name == '1-h2h' then
+        h2hs[1] = module.weight
+        print('1 initialized')
+      elseif name == '2-h2h' then
+        h2hs[2] = module.weight
+        print('2 initialized')
+      else
+        M.initialize_weights(module)
+      end
       M.initialize_biases(module)
     end
   end
+
+  M.orthogonal_init(h2hs[1])
+  h2hs[2]:copy(h2hs[1]:t())
 
   model.param_grads:zero()
 end

@@ -6,9 +6,10 @@ require 'nngraph'
 local M = {}
 
 function M.build_cell(input, prev_hidden, input_size, n_neurons, layer)
-  local hidden = nn.ReLU()(buildtools.compose_inputs(input_size, n_neurons, input, prev_hidden, '1'))
+  local hidden_1 = nn.ReLU()(buildtools.compose_inputs(input_size, n_neurons, input, prev_hidden, '1'))
+  local hidden_2 = nn.ReLU()(buildtools.compose_inputs(input_size, n_neurons, input, hidden_1, '2'))
 
-  return hidden
+  return hidden_2
 end
 
 function M.build(n_symbols, n_neurons, n_layers)
