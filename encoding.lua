@@ -18,10 +18,6 @@ function M.chars_to_ints(text)
     probs[c] = probs[c] + 1/#text
   end
 
-  local probs = torch.Tensor(probs)
-  alphabet.means = probs:clone():resize(1, -1)
-  alphabet.stds = torch.sqrt(torch.cmul(probs, torch.mul(probs, -1) + 1)):resize(1, -1)
-
   return alphabet, encoded
 end
 
@@ -40,10 +36,7 @@ function M.chars_to_one_hot(alphabet, text)
     ints[i] = alphabet[c]
   end
 
-  local means = torch.repeatTensor(alphabet.means, #text, 1)
-  local std = torch.repeatTensor(alphabet.stds, #text, 1)
-
-  return M.ints_to_one_hot(ints, #alphabet):add(-1, means):cdiv(std)
+  return M.ints_to_one_hot(ints, #alphabet)
 end
 
 function M.one_hot_to_ints(one_hot)

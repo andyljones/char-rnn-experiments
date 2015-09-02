@@ -15,6 +15,10 @@ function M.orthogonal_init(mat)
   mat:copy(Q)
 end
 
+function M.identity_init(mat)
+  mat:eye(mat:size(1), mat:size(2))
+end
+
 function M.glorot_init(mat, relu)
   local relu = relu or false
   local n_in, n_out = mat:size(1), mat:size(2)
@@ -29,11 +33,12 @@ end
 
 function M.initialize_weights(module)
   local weights = module.weight
-  if weights:size(1) == weights:size(2) then
-    M.orthogonal_init(weights)
-  else
-    M.glorot_init(weights)
-  end
+  -- if weights:size(1) == weights:size(2) then
+  --   M.orthogonal_init(weights)
+  -- else
+  --   M.glorot_init(weights)
+  -- end
+  M.identity_init(weights)
 end
 
 function M.initialize_biases(module)
