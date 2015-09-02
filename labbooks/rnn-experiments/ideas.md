@@ -1,0 +1,4 @@
+ - Inputs are not being normalized at the moment. Should each character have mean 0 and variance 1?
+ - Glorot initialization defaults to averaging the number of input nodes and output nodes because it wants to preserve both the forward and backward signals. But in the input layer of the RNN, we're not interested in the backpropagated signal - would it be better to just use `var(x) = 1/n_in`?
+ - The input at each timestep of the RNN 'injects' additional variance into the system. Should the orthogonal initialization matrices be underscaled to account for this?
+ - When using orthogonal initialization, each matrix picks its own basis, and in multi-layer-per-timestep systems it's unlikely that the output basis of one layer will line up with the input basis of the next layer. Might there be an advantage in forcing this?
