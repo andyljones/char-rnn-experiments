@@ -2,4 +2,4 @@ This is a ground-up rewrite of Karpathy's [char-rnn](https://github.com/karpathy
 
 To run most of the experiments, simply check out the relevant commit and (for now at least) run `training.lua`. You'll need to have Torch installed, along with the `nn`, `nngraph` and `optim` packages. Instructions on how to install those can be found in the [char-rnn readme](https://github.com/karpathy/char-rnn).
 
-As a final note, there is no documentation and no comments because <s>I'm a bad developer</s> right now I'm the only one using this. If that changes, call me out on it and I'll write some.
+As a final note, there is no documentation because <s>I'm a bad developer</s> right now I'm the only one using this. If that changes, call me out on it and I'll write some.
