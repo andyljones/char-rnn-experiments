@@ -7,3 +7,6 @@ On investigating memory
 - I'd like a more specific experiment on network memory. My hypothesis is that multiple in-time layers allow the simple RNN to remember things like the GRU does, but the Shakespeare task doesn't explicitly show this. Something like parenthesis matching would be good to look into. I think the NTM and stack-augmenting papers have several experiments along these lines.
 - For the same reason, I think very small networks with only a handful of cells would be worth looking into. How does the recall capacity of RNNs scale with their size? In sufficiently small networks, could we effectively visualize it learning to memorize?
 - Karpathy's RNN visualization work might be useful in demonstrating that the simple RNN does/doesn't learn to reference long-past characters.
+
+Other
+- One big difference between the RNN and GRU experiments is that the RNN uses relu nonlinearities while the GRU uses tanh. This is somewhat justified by the fact that I've never seen a GRU use a relu, but [this paper](http://bigml.cs.tsinghua.edu.cn/~jun/pub/lstm-parallel.pdf) suggests that LSTMs do better with 'steeper' nonlinearities. What happens if I replace the tanh/sigmoids with the piecewise linear nonlinearities they suggest?
