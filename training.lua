@@ -19,7 +19,7 @@ function M.make_iterators(options)
 end
 
 function M.make_model(options, n_symbols)
-  local model = gru.build(n_symbols, options.n_neurons, options.n_layers)
+  local model = rnn.build(n_symbols, options.n_neurons, options.n_layers)
   model.params, model.param_grads = model:getParameters()
   initializer.initialize_network(model)
   return model
@@ -127,7 +127,7 @@ options = {
   n_neurons = 128,
   n_timesteps = 50,
   n_samples = 50,
-  optim_state = {learningRate=4e-3, alpha=0.95},
+  optim_state = {learningRate=1e-3, alpha=0.95},
   split = {0.95, 0.05},
   grad_clip = 5,
   n_steps = 10000,
