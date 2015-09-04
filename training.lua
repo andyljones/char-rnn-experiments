@@ -8,6 +8,7 @@ local initializer = require 'initializer'
 local storage = require 'storage'
 local usetools = require 'usetools'
 local timing = require 'timing'
+local profi = require 'profi'
 require 'nn'
 require 'nngraph'
 require 'optim'
@@ -26,20 +27,25 @@ function M.make_model(options, n_symbols)
   return model
 end
 
-function M.calculate_loss(output, y)
-  local n_samples, n_timesteps, n_symbols = unpack(torch.totable(output:size()))
-  local loss = 0
-  local grad_loss = torch.zeros(n_samples, n_timesteps, n_symbols)
-  for i = 1, n_timesteps do
-    local criterion = nn.CrossEntropyCriterion()
-    local timestep_loss = criterion:forward(output[{{}, i}], y[{{}, i}])
-    local timestep_grad_loss = criterion:backward(output[{{}, i}], y[{{}, i}])
+function M.make_loss_calculator()
+  local criterion = nn.CrossEntropyCriterion()
 
-    loss = loss + timestep_loss/n_timesteps
-    grad_loss[{{}, i}] = timestep_grad_loss/n_timesteps
+  function co(output, y)
+    local n_samples, n_timesteps, n_symbols = unpack(torch.totable(output:size()))
+    local loss = 0
+    local grad_loss = torch.zeros(n_samples, n_timesteps, n_symbols)
+    for i = 1, n_timesteps do
+      local timestep_loss = criterion:forward(output[{{}, i}], y[{{}, i}])
+      local timestep_grad_loss = criterion:backward(output[{{}, i}], y[{{}, i}])
+
+      loss = loss + timestep_loss/n_timesteps
+      grad_loss[{{}, i}] = timestep_grad_loss/n_timesteps
+    end
+
+    return loss, grad_loss
   end
 
-  return loss, grad_loss
+  return co
 end
 
 function clip(gradients, threshold)
@@ -52,12 +58,14 @@ end
 function M.make_trainer(model, training_iterator, grad_clip)
   local n_timesteps = training_iterator():size(2)
   local forward, backward = usetools.make_forward_backward(model, n_timesteps)
+  local calculate_loss = M.make_loss_calculator()
+
   function trainer(x)
     model.params:copy(x)
     local X, y = training_iterator()
 
     local output = forward(X)
-    local loss, grad_loss = M.calculate_loss(output, y)
+    local loss, grad_loss = calculate_loss(output, y)
     backward(grad_loss)
 
     clip(model.param_grads, grad_clip)
@@ -71,12 +79,14 @@ end
 function M.make_tester(model, testing_iterator, n_test_batches)
   local n_timesteps = testing_iterator():size(2)
   local forward, _ = usetools.make_forward_backward(model, n_timesteps)
+  local calculate_loss = M.make_loss_calculator()
+
   function tester()
     local average_loss = 0
     for i = 1, n_test_batches do
       local X, y = testing_iterator()
       local output = forward(X)
-      local loss, _  = M.calculate_loss(output, y)
+      local loss, _  = calculate_loss(output, y)
       average_loss = average_loss + loss/n_test_batches
     end
     return average_loss
@@ -92,6 +102,7 @@ function M.train(model, iterators, saver, options)
 
   local train_losses, test_losses = {}, {}
 
+  profi:start()
   for i = 1, options.n_steps do
     local _, loss = optim.rmsprop(trainer, model.params, options.optim_state)
     train_losses[i] = loss
@@ -112,6 +123,8 @@ function M.train(model, iterators, saver, options)
       collectgarbage()
     end
   end
+  profi:stop()
+  profi:writeReport('profile.txt')
 end
 
 function M.run(options)
@@ -132,11 +145,13 @@ options = {
   optim_state = {learningRate=1e-3, alpha=0.95},
   split = {0.95, 0.05},
   grad_clip = 5,
-  n_steps = 10000,
+  n_steps = 100,
   n_test_batches = 100,
   testing_interval = 1000,
 }
 
 M.run(options)
+
+
 
 return M
