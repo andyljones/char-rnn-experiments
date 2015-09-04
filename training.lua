@@ -7,6 +7,7 @@ local table = require 'std.table'
 local initializer = require 'initializer'
 local storage = require 'storage'
 local usetools = require 'usetools'
+local timing = require 'timing'
 require 'nn'
 require 'nngraph'
 require 'optim'
@@ -87,13 +88,14 @@ end
 function M.train(model, iterators, saver, options)
   local trainer = M.make_trainer(model, iterators[1], options.grad_clip)
   local tester = M.make_tester(model, iterators[2], options.n_test_batches)
+  local timer = timing.make_timer()
 
   local train_losses, test_losses = {}, {}
 
   for i = 1, options.n_steps do
     local _, loss = optim.rmsprop(trainer, model.params, options.optim_state)
     train_losses[i] = loss
-    print(string.format('Batch %4d, loss %4.2f', i, loss[1]))
+    print(string.format('Batch %4d, loss %4.2f, %.0fms per batch', i, loss[1], 1000*timer()))
 
     if i % options.testing_interval == 0 then
       local loss = tester()
