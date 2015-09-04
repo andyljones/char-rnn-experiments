@@ -21,19 +21,19 @@ function M.make_iterators(options)
 end
 
 function M.make_model(options, n_symbols)
-  local model = rnn.build(n_symbols, options.n_neurons, options.n_layers)
+  local model = rnn.build(n_symbols, options.n_neurons, options.n_layers):cuda()
   model.params, model.param_grads = model:getParameters()
   initializer.initialize_network(model)
   return model
 end
 
 function M.make_loss_calculator()
-  local criterion = nn.CrossEntropyCriterion()
+  local criterion = nn.CrossEntropyCriterion():cuda()
 
   function co(output, y)
     local n_samples, n_timesteps, n_symbols = unpack(torch.totable(output:size()))
     local loss = 0
-    local grad_loss = torch.zeros(n_samples, n_timesteps, n_symbols)
+    local grad_loss = torch.zeros(n_samples, n_timesteps, n_symbols):cuda()
     for i = 1, n_timesteps do
       local timestep_loss = criterion:forward(output[{{}, i}], y[{{}, i}])
       local timestep_grad_loss = criterion:backward(output[{{}, i}], y[{{}, i}])
@@ -63,6 +63,7 @@ function M.make_trainer(model, training_iterator, grad_clip)
   function trainer(x)
     model.params:copy(x)
     local X, y = training_iterator()
+    local X, y = X:float():cuda(), y:float():cuda()
 
     local output = forward(X)
     local loss, grad_loss = calculate_loss(output, y)
@@ -85,6 +86,7 @@ function M.make_tester(model, testing_iterator, n_test_batches)
     local average_loss = 0
     for i = 1, n_test_batches do
       local X, y = testing_iterator()
+      local X, y = X:cuda(), y:cuda()
       local output = forward(X)
       local loss, _  = calculate_loss(output, y)
       average_loss = average_loss + loss/n_test_batches
@@ -102,7 +104,7 @@ function M.train(model, iterators, saver, options)
 
   local train_losses, test_losses = {}, {}
 
-  profi:start()
+  -- profi:start()
   for i = 1, options.n_steps do
     local _, loss = optim.rmsprop(trainer, model.params, options.optim_state)
     train_losses[i] = loss
@@ -123,11 +125,18 @@ function M.train(model, iterators, saver, options)
       collectgarbage()
     end
   end
-  profi:stop()
-  profi:writeReport('profile.txt')
+  -- profi:stop()
+  -- profi:writeReport('profile.txt')
+end
+
+function M.initialize_cuda()
+  local cunn = require 'cunn'
+  local cutorch = require 'cutorch'
+  cutorch.setDevice(1)
 end
 
 function M.run(options)
+  M.initialize_cuda()
   local start_time = os.time()
   local alphabet, iterators = M.make_iterators(options)
   local model = M.make_model(options, #alphabet)
@@ -145,9 +154,9 @@ options = {
   optim_state = {learningRate=1e-3, alpha=0.95},
   split = {0.95, 0.05},
   grad_clip = 5,
-  n_steps = 100,
+  n_steps = 10000,
   n_test_batches = 100,
-  testing_interval = 1000,
+  testing_interval = 1000
 }
 
 M.run(options)
