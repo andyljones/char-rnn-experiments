@@ -7,7 +7,7 @@ Following up on what [some folks on reddit said](https://www.reddit.com/r/Machin
 
 Several things to note here
 
- - First is the performance of the 3-layer simple RNN. I ran what I thought was the same experiment yesterday and (as reported in post \#1) got a test error of 1.46. I think this might be an indication that my test set size is too small.
+ - First is the performance of the 3-layer simple RNN. I ran what I thought was the same experiment yesterday and (as reported in post \#1) got a test error of 1.47. I think this might be an indication that my test set size is too small.
  - Second is that apparently the architecture - single-layer, multi-layer, RNN or GRU - makes no difference at all when the param count is fixed (to 83k, which is what the GRU experiment had in yesterday's work). What I'm thinking now is that maybe generative language modelling is a bad way to benchmark these architectures, at least when the networks are so small: it could be that the networks all sink their resources in remembering very short-term dependencies (since spelling words correctly probably gets you a lot of objective for your resources), while longer-term dependencies are ignored.
 
- Tomorrow I think I'll start exploring other, simpler, tasks. 
+Tomorrow I think I'll start exploring other, simpler, tasks. 
