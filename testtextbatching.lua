@@ -1,12 +1,12 @@
 local torch = require 'torch'
 local luaunit = require 'luaunit'
-local batching = require 'batching'
+local textbatching = require 'textbatching'
 
 function test_split_indices()
   local indices = torch.Tensor{1, 2, 3, 4, 5}
   local fractions = torch.Tensor{0.4, 0.4, 0.2}
 
-  local actual = batching.split_indices(indices, fractions)
+  local actual = textbatching.split_indices(indices, fractions)
 
   local expected = {torch.Tensor{1, 2}, torch.Tensor{3, 4}, torch.Tensor{5}}
 

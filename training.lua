@@ -1,4 +1,4 @@
-local batching = require 'batching'
+local mirrorbatching = require 'mirrorbatching'
 local gru = require 'gru'
 local encoding = require 'encoding'
 local torch = require 'torch'
@@ -17,8 +17,7 @@ require 'nngraph'
 local M = {}
 
 function M.make_iterators(options)
-  local text = batching.load_text()
-  return batching.make_batch_iterators(text, torch.Tensor(options.split), options.n_timesteps, options.n_samples)
+  return mirrorbatching.make_batch_iterators(options.n_timesteps, options.n_samples)
 end
 
 function M.make_model(options, n_symbols)
@@ -109,12 +108,12 @@ function M.train(model, iterators, saver, options)
   for i = 1, options.n_steps do
     local _, loss = optim.rmsprop(trainer, model.params, options.optim_state)
     train_losses[i] = loss
-    print(string.format('Batch %4d, loss %4.2f, %.0fms per batch', i, loss[1], 1000*timer()))
+    print(string.format('Batch %4d, loss %5.3f, %.0fms per batch', i, loss[1], 1000*timer()))
 
     if i % options.testing_interval == 0 then
       local loss = tester()
       test_losses[i] = loss
-      print(string.format('Test loss %.2f', loss))
+      print(string.format('Test loss %.3f', loss))
 
       if saver then
         print(string.format('Saving...'))
@@ -150,7 +149,7 @@ end
 options = {
   n_layers = 1,
   n_neurons = 128,
-  n_timesteps = 50,
+  n_timesteps = 11,
   n_samples = 50,
   optim_state = {learningRate=1e-3, alpha=0.95},
   split = {0.95, 0.05},

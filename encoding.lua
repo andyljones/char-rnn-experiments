@@ -29,6 +29,15 @@ function M.ints_to_one_hot(ints, n_symbols)
   return one_hot
 end
 
+function M.batch_ints_to_one_hot(ints, n_symbols)
+  local batch_size, seq_length = ints:size(1), ints:size(2)
+  local zeros = torch.zeros(batch_size, seq_length, n_symbols)
+  local indices = torch.Tensor(batch_size, seq_length, 1):copy(ints):long()
+  local one_hot = zeros:scatter(3, indices, 1)
+  return one_hot
+end
+
+
 function M.chars_to_one_hot(alphabet, text)
   local ints = torch.Tensor(#text)
   for i = 1, #text do
