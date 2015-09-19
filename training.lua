@@ -1,6 +1,5 @@
 local batching = require 'batching'
 local gru = require 'gru'
-local rnn = require 'rnn'
 local encoding = require 'encoding'
 local torch = require 'torch'
 local table = require 'std.table'
@@ -9,9 +8,11 @@ local storage = require 'storage'
 local usetools = require 'usetools'
 local timing = require 'timing'
 local profi = require 'profi'
+local rnn = require 'rnn'
+
+require 'optim'
 require 'nn'
 require 'nngraph'
-require 'optim'
 
 local M = {}
 
