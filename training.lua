@@ -42,6 +42,8 @@ function M.make_loss_calculator()
       grad_loss[{{}, i}] = timestep_grad_loss/n_timesteps
     end
 
+    assert(loss == loss)
+
     return loss, grad_loss
   end
 
@@ -103,7 +105,7 @@ function M.stop_early(test_losses)
   if n_losses > 1 then
     local previous_min = test_losses[{{1, n_losses - 1}}]:min()
     local recent_min = test_losses[n_losses]
-    return (recent_min > 0.99*previous_min)
+    return (recent_min > 0.99*previous_min) or (0.01 > recent_min)
   else
     return false
   end
@@ -119,7 +121,11 @@ function M.train(model, iterators, options, saver)
   for i = 1, options.max_steps do
     local _, loss = optim.rmsprop(trainer, model.params, options.optim_state)
     train_losses[i] = loss
-    print(string.format('Batch %4d, loss %5.3f, %.0fms per batch', i, loss[1], 1000*timer()))
+
+    local time_per_batch = 1000*timer()
+    if i%100 == 1 then
+      print(string.format('Batch %4d, loss %5.3f, %.0fms per batch', i, loss[1], time_per_batch))
+    end
 
     if i % options.testing_interval == 0 then
       local loss = tester()
@@ -140,10 +146,14 @@ function M.train(model, iterators, options, saver)
   end
 end
 
+
+local cuda_initialized = false
 function M.initialize_cuda()
-  local cunn = require 'cunn'
-  local cutorch = require 'cutorch'
-  cutorch.setDevice(1)
+  if not cuda_initialized then
+    local cunn = require 'cunn'
+    local cutorch = require 'cutorch'
+    cutorch.setDevice(1)
+  end
 end
 
 function M.run(options)
@@ -156,22 +166,5 @@ function M.run(options)
   local saver = storage.make_saver(model, options, alphabet, start_time)
   M.train(model, iterators, options, saver)
 end
-
-options = {
-  n_layers = 1,
-  n_neurons = 128,
-  n_timesteps = 11,
-  n_samples = 50,
-  optim_state = {learningRate=1e-3, alpha=0.95},
-  split = {0.95, 0.05},
-  grad_clip = 5,
-  max_steps = 10000,
-  n_test_batches = 100,
-  testing_interval = 1000
-}
-
-M.run(options)
-
-
 
 return M

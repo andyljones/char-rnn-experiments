@@ -8,7 +8,7 @@ local M = {}
 
 function M.make_saver(model, options, alphabet, start_time)
   local start_date = os.date('%Y-%m-%d %H-%M-%S', start_time)
-  local directory = string.format('checkpoints/%s', start_date)
+  local directory = string.format('%s/%s-%s', options.save_dir, options.name, start_date)
   lfs.mkdir(directory)
 
   local filename = string.format('%s/constants.t7', directory)
@@ -60,8 +60,5 @@ function M.load_options_and_params(datestring)
 
   return constants.options, params
 end
-
--- model = load_model('2015-08-29 15-45-15')
-
 
 return M

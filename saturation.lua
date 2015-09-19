@@ -1,17 +1,5 @@
-
-
-DEFAULT_OPTIONS = {
-  n_layers = 1,
-  n_neurons = nil,
-  n_timesteps = nil,
-  n_samples = 50,
-  optim_state = {learningRate=1e-3, alpha=0.95},
-  split = {0.95, 0.05},
-  grad_clip = 5,
-  n_steps = 10000,
-  n_test_batches = 100,
-  testing_interval = 1000
-}
+local table = require 'std.table'
+local training = require 'training'
 
 function make_param_generator(timestep_stride, size_stride)
   local timesteps = torch.linspace(timestep_stride[1], timestep_stride[2], timestep_stride[3])
@@ -22,9 +10,20 @@ function make_param_generator(timestep_stride, size_stride)
       for j = k, 1, -1 do
         local i = k - j + 1
         if i <= timesteps:size(1) and j <= sizes:size(1) then
-          local options = DEFAULT_OPTIONS:clone()
-          options.n_timesteps = timesteps[i]
-          options.n_neurons = sizes[i]
+          local options = {
+            n_layers = 1,
+            n_neurons = math.floor(sizes[j]),
+            n_timesteps = 2*math.floor(timesteps[i]/2)+1,
+            n_samples = 50,
+            optim_state = {learningRate=1e-3, alpha=0.95},
+            split = {0.95, 0.05},
+            grad_clip = 5,
+            max_steps = 10000,
+            n_test_batches = 100,
+            testing_interval = 1000,
+            name = 'saturation-1',
+            save_dir = '/mnt/saturation-records'
+          }
           coroutine.yield(options)
         end
       end
@@ -34,4 +33,10 @@ function make_param_generator(timestep_stride, size_stride)
   return coroutine.wrap(co)
 end
 
-make_param_generator({1, 3, 3}, {1, 5, 5})
+local param_gen = make_param_generator({3, 20, 5}, {1, 50, 6})
+for i = 1, math.huge do
+  local options = param_gen()
+  if not options then break end
+  print(string.format('Options: %d neurons, %d timesteps', options.n_neurons, options.n_timesteps))
+  training.run(options)
+end
