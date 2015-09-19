@@ -97,36 +97,47 @@ function M.make_tester(model, testing_iterator, n_test_batches)
   return tester
 end
 
-function M.train(model, iterators, saver, options)
+function M.stop_early(test_losses)
+  local test_losses = torch.Tensor(test_losses)
+  local n_losses = test_losses:size(1)
+  if n_losses > 1 then
+    local previous_min = test_losses[{{1, n_losses - 1}}]:min()
+    local recent_min = test_losses[n_losses]
+    return (recent_min > 0.99*previous_min)
+  else
+    return false
+  end
+end
+
+function M.train(model, iterators, options, saver)
   local trainer = M.make_trainer(model, iterators[1], options.grad_clip)
   local tester = M.make_tester(model, iterators[2], options.n_test_batches)
   local timer = timing.make_timer()
 
   local train_losses, test_losses = {}, {}
 
-  -- profi:start()
-  for i = 1, options.n_steps do
+  for i = 1, options.max_steps do
     local _, loss = optim.rmsprop(trainer, model.params, options.optim_state)
     train_losses[i] = loss
     print(string.format('Batch %4d, loss %5.3f, %.0fms per batch', i, loss[1], 1000*timer()))
 
     if i % options.testing_interval == 0 then
       local loss = tester()
-      test_losses[i] = loss
+      test_losses[#test_losses+1] = loss
       print(string.format('Test loss %.3f', loss))
 
       if saver then
         print(string.format('Saving...'))
         saver(model.params, train_losses, test_losses)
       end
+
+      if M.stop_early(test_losses) then break end
     end
 
     if i % 10 == 0 then
       collectgarbage()
     end
   end
-  -- profi:stop()
-  -- profi:writeReport('profile.txt')
 end
 
 function M.initialize_cuda()
@@ -143,7 +154,7 @@ function M.run(options)
   print(string.format('This model has %d parameters', model.params:size(1)))
 
   local saver = storage.make_saver(model, options, alphabet, start_time)
-  M.train(model, iterators, saver, options)
+  M.train(model, iterators, options, saver)
 end
 
 options = {
@@ -154,7 +165,7 @@ options = {
   optim_state = {learningRate=1e-3, alpha=0.95},
   split = {0.95, 0.05},
   grad_clip = 5,
-  n_steps = 10000,
+  max_steps = 10000,
   n_test_batches = 100,
   testing_interval = 1000
 }

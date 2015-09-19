@@ -16,7 +16,7 @@ function M.make_saver(model, options, alphabet, start_time)
 
   function saver(params, train_losses, test_losses)
     local checkpoint_num = table.size(test_losses)
-    local best_so_far = test_losses[#train_losses]
+    local best_so_far = test_losses[#test_losses]
     local filename = string.format('%s/%s-batches-%d-loss-%.2f.t7', directory, checkpoint_num, #train_losses, best_so_far)
 
     local checkpoint = {
