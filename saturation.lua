@@ -1,5 +1,9 @@
 local table = require 'std.table'
 local training = require 'training'
+local lfs = require 'lfs'
+local storage = require 'storage'
+local torch = require 'torch'
+require 'cutorch'
 
 function make_param_generator(timestep_stride, size_stride)
   local timesteps = torch.linspace(timestep_stride[1], timestep_stride[2], timestep_stride[3])
@@ -35,10 +39,37 @@ function make_param_generator(timestep_stride, size_stride)
   return coroutine.wrap(co)
 end
 
-local param_gen = make_param_generator({3, 50, 11}, {1, 100, 11})
-for i = 1, math.huge do
-  local count, options = param_gen()
-  if not options then break end
-  print(string.format('Options: %d neurons, %d timesteps. Iteration %d', options.n_neurons, options.n_timesteps, count))
-  training.run(options)
+function run()
+  local param_gen = make_param_generator({3, 50, 11}, {1, 100, 11})
+  for i = 1, math.huge do
+    local count, options = param_gen()
+    if not options then break end
+    print(string.format('Options: %d neurons, %d timesteps. Iteration %d', options.n_neurons, options.n_timesteps, count))
+    training.run(options)
+  end
 end
+
+function load_experiment_results(experiment_name)
+  local results = {}
+  local i = 1
+  for dirname in lfs.dir('/mnt/saturation-records') do
+    if dirname:gmatch(experiment_name)() then
+      local constants, checkpoint = storage.load('/mnt/saturation-records/' .. dirname)
+      local options = constants.options
+      local test_losses = checkpoint.test_losses
+      results[#results + 1] = {options=constants.options, train_losses=checkpoint.train_losses, test_losses=checkpoint.test_losses}
+    end
+
+    print(string.format('Processed directory %d', i))
+    i = i + 1
+  end
+
+  return results
+end
+
+function extract_experiment_results(experiment_name)
+  local results = load_experiment_results(experiment_name)
+  torch.save('results/' .. experiment_name, results)
+end
+
+extract_experiment_results('saturation%-1')

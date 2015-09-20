@@ -31,8 +31,7 @@ function M.make_saver(model, options, alphabet, start_time)
   return saver
 end
 
-function M.load(datestring)
-  local directory = string.format('checkpoints/%s', datestring)
+function M.load(directory)
   local constants = torch.load(directory .. '/constants.t7')
 
   local checkpoints = {}
@@ -48,15 +47,15 @@ function M.load(datestring)
   return constants, latest_checkpoint
 end
 
-function M.load_model(datestring)
-  local constants, checkpoint = M.load(datestring)
+function M.load_model(dirname)
+  local constants, checkpoint = M.load(dirname)
   constants.model.params:copy(checkpoint.params)
 
   return constants.model, constants.alphabet, constants.options
 end
 
-function M.load_options_and_params(datestring)
-  local constants, checkpoint = M.load(datestring)
+function M.load_options_and_params(dirname)
+  local constants, checkpoint = M.load(dirname)
 
   return constants.options, params
 end
