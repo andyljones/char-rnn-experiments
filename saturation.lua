@@ -3,7 +3,8 @@ local training = require 'training'
 local lfs = require 'lfs'
 local storage = require 'storage'
 local torch = require 'torch'
-require 'cutorch'
+local cjson = require 'cjson'
+-- require 'cutorch'
 
 function make_param_generator(timestep_stride, size_stride)
   local timesteps = torch.linspace(timestep_stride[1], timestep_stride[2], timestep_stride[3])
@@ -72,4 +73,22 @@ function extract_experiment_results(experiment_name)
   torch.save('results/' .. experiment_name, results)
 end
 
-extract_experiment_results('saturation%-1')
+function load_results(experiment_name)
+  return torch.load('results/' .. experiment_name)
+end
+
+function save_as_json(experiment_name)
+  local results = load_results(experiment_name)
+  local losses = {}
+  for _, r in pairs(results) do
+    local n_timesteps, n_neurons = r.options.n_timesteps, r.options.n_neurons
+    local loss = r.test_losses[#r.test_losses]
+    losses[#losses+1] = {n_timesteps=n_timesteps, n_neurons=n_neurons, loss=loss}
+  end
+
+  local f = io.open(string.format('results/%s.json', experiment_name), 'w')
+  f:write(cjson.encode(losses))
+  f:close()
+end
+
+save_as_json('saturation%-1')
