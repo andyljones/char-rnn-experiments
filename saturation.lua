@@ -26,7 +26,8 @@ function make_param_generator(timestep_stride, size_stride)
             max_steps = 25000,
             n_test_batches = 100,
             testing_interval = 1000,
-            name = 'saturation-1',
+            split = torch.Tensor({0.95, 0.05}),
+            name = 'saturation-2',
             save_dir = 'saturation-records'
           }
 
@@ -91,6 +92,5 @@ function results_as_json(experiment_name)
   f:close()
 end
 
-results_as_json('saturation%-1')
-
---save_as_json('saturation%-1')
+run()
+-- results_as_json('saturation%-1')

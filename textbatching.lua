@@ -92,7 +92,8 @@ function M.make_batch_iterator(chunk_iterator, batch_size)
   return coroutine.wrap(co)
 end
 
-function M.make_batch_iterators(text, split_fractions, chunk_size, batch_size)
+function M.make_batch_iterators(split_fractions, chunk_size, batch_size)
+  local text = M.load_text()
   local alphabet, chunk_iterators = M.make_chunk_iterators(text, split_fractions, chunk_size)
 
   local batch_iterators = {}

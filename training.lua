@@ -1,4 +1,4 @@
-local mirrorbatching = require 'mirrorbatching'
+local textbatching = require 'textbatching'
 local gru = require 'gru'
 local encoding = require 'encoding'
 local torch = require 'torch'
@@ -17,7 +17,7 @@ require 'nngraph'
 local M = {}
 
 function M.make_iterators(options)
-  return mirrorbatching.make_batch_iterators(options.n_timesteps, options.n_samples)
+  return textbatching.make_batch_iterators(options.split, options.n_timesteps, options.n_samples)
 end
 
 function M.make_model(options, n_symbols)
