@@ -102,9 +102,9 @@ end
 function M.stop_early(test_losses)
   local test_losses = torch.Tensor(test_losses)
   local n_losses = test_losses:size(1)
-  if n_losses > 1 then
-    local previous_min = test_losses[{{1, n_losses - 1}}]:min()
-    local recent_min = test_losses[n_losses]
+  if n_losses > 3 then
+    local previous_min = test_losses[{{1, n_losses - 2}}]:min()
+    local recent_min = test_losses[{{n_losses-1, n_losses}}]:min()
     return (recent_min > 0.99*previous_min) or (0.01 > recent_min)
   else
     return false

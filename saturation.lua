@@ -4,7 +4,7 @@ local lfs = require 'lfs'
 local storage = require 'storage'
 local torch = require 'torch'
 local cjson = require 'cjson'
--- require 'cutorch'
+require 'cutorch'
 
 function make_param_generator(timestep_stride, size_stride)
   local timesteps = torch.linspace(timestep_stride[1], timestep_stride[2], timestep_stride[3])
@@ -27,7 +27,7 @@ function make_param_generator(timestep_stride, size_stride)
             n_test_batches = 100,
             testing_interval = 1000,
             name = 'saturation-1',
-            save_dir = '/mnt/saturation-records'
+            save_dir = 'saturation-records'
           }
 
           coroutine.yield(count, options)
@@ -41,7 +41,7 @@ function make_param_generator(timestep_stride, size_stride)
 end
 
 function run()
-  local param_gen = make_param_generator({3, 50, 11}, {1, 100, 11})
+  local param_gen = make_param_generator({3, 50, 21}, {1, 100, 21})
   for i = 1, math.huge do
     local count, options = param_gen()
     if not options then break end
@@ -53,9 +53,9 @@ end
 function load_experiment_results(experiment_name)
   local results = {}
   local i = 1
-  for dirname in lfs.dir('/mnt/saturation-records') do
+  for dirname in lfs.dir('saturation-records') do
     if dirname:gmatch(experiment_name)() then
-      local constants, checkpoint = storage.load('/mnt/saturation-records/' .. dirname)
+      local constants, checkpoint = storage.load('saturation-records/' .. dirname)
       local options = constants.options
       local test_losses = checkpoint.test_losses
       results[#results + 1] = {options=constants.options, train_losses=checkpoint.train_losses, test_losses=checkpoint.test_losses}
@@ -77,8 +77,8 @@ function load_results(experiment_name)
   return torch.load('results/' .. experiment_name)
 end
 
-function save_as_json(experiment_name)
-  local results = load_results(experiment_name)
+function results_as_json(experiment_name)
+  local results = load_experiment_results(experiment_name)
   local losses = {}
   for _, r in pairs(results) do
     local n_timesteps, n_neurons = r.options.n_timesteps, r.options.n_neurons
@@ -91,4 +91,6 @@ function save_as_json(experiment_name)
   f:close()
 end
 
-save_as_json('saturation%-1')
+results_as_json('saturation%-1')
+
+--save_as_json('saturation%-1')
